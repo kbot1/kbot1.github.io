@@ -1,6 +1,7 @@
 ---
 title: "FirstPage"
 output: html_document
+layout: page
 ---
 
 ```{r setup, include=FALSE}
