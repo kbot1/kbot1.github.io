@@ -1,0 +1,45 @@
+---
+title: "Bilan d'extension"
+author: "Kbot1"
+date: "5/17/2021"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Enjeux
+
+Le bilan d'extension est un instant crucial de la prise en charge pour le patient et le médecin.
+C'est souvent à cette phase que la prise en charge peut prendre davantage de temps que prévu. Un bilan d'extension doit donc être complet, c'est à dire anticiper l'extension de la maladie actuelle mais également anticiper les bilans préthérapeutiques, les potentielles complications ou des prédispositions contre-indiquant certains traitements.
+
+## Bilan d'imagerie
+
+### La Tomographie par Emission de Positons (TEP-TDM)
+
+C'est l'examen qui a remplacé la TDM-TDP dans la majorité des bilans d'extension de cancer.
+Il permet de déterminer les limites de la tumeur lorsque celle-ci est dans un environnement remanié inflammatoire, comme dans les cancers bronchiques au sein d'un foyer de condensation parenchymateuse. 
+
+Elle consiste à administrer une substance radioactive couplée à un molécule métabolisée différement dans les cellules d'intérêt par rapport aux autres régions du corps.
+La plus commune et la plus ancienne est celle au 18-FDG, qui permet de quantifier et cartographier le métabolisme glucidique. 
+D'autres, plus récentes ont montré leur intérêt dans des pathologies plus spécifiques.
+Par exemple, la Choline permet de cibler les cancers de prostates et les hépatocarcinomes.
+Le PSMA permet de quantifier spécifiquement les cellules exprimant le PSA, dans la majorité des cancers de la prostate.
+
+### L'Imagerie par Résonnance Magnétique (IRM)
+
+### La Tomodensitométrie Thoraco-Abdomino-Pelvienne (TDM-TAP)
+
+## Les bilans endoscopiques
+
+### Fibroscopie digestive
+
+Certains cancers sont associés à d'autres cancers, soit en raison d'un terrain de prédisposition génétique, soit par des facteurs de risque commun. Il est probable que des caractéristiques du patient soit également impacté dans la survenue du cancer à certains moment de la vie. Par exemple, lorsqu'une immuno-dépression profonde s'installe suite à une infection virale ou suit à des traitements. 
+
+
+
+## Les bilans biologiques :
+
+### Le dosage de l'uracilémie.
+
