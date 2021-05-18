@@ -2,7 +2,7 @@
 title:               Radiation Oncology
 tagline:             'for patient and doctors'
 description:         'Info from <a href="https://pubmed.ncbi.nlm.nih.gov/" target="_blank">Pubmed</a> made by <a href="https://twitter.com/KBerthelot_MD" target="_blank">@KBerthelot_MD</a>.'
-url:                 http://kbot1.github.io
+url:                 https://kbot1.github.io
 baseurl:             ''
 paginate:            5
 permalink:           pretty
