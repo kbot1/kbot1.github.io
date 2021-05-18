@@ -1,13 +1,7 @@
 ---
-title: "Bilan d'extension"
-author: "Kbot1"
-date: "5/17/2021"
-output: html_document
+layout: post
+title: Bilan d'extension
 ---
-
-```{r setup, include=FALSE}
-knitr::opts_chunk$set(echo = TRUE)
-```
 
 ## Enjeux
 
