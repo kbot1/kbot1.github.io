@@ -61,7 +61,7 @@ function isActive(p: string) {
     <header class="site-header">
       <div class="container bar">
         <a class="brand" href={href(lang, '/')}>
-          <span class="mono">{SITE.initials}</span>
+          {SITE.portraitMini ? <img class="mono photo" src={SITE.portraitMini} alt="" width="34" height="34" /> : <span class="mono">{SITE.initials}</span>}
           <span class="brand-name">{SITE.name}</span>
         </a>
         <button class="icon-btn menu-btn" aria-label={t('menu')} aria-expanded="false" aria-controls="nav">
@@ -128,6 +128,7 @@ function isActive(p: string) {
         display: grid; place-items: center; width: 34px; height: 34px; border-radius: 8px;
         background: var(--accent); color: var(--accent-text); font: 700 0.85rem var(--sans); letter-spacing: 0.04em;
       }
+      .mono.photo { border-radius: 50%; object-fit: cover; box-shadow: 0 0 0 1px var(--line); }
       .brand-name { font-family: var(--serif); font-weight: 600; font-size: 1.1rem; white-space: nowrap; }
       .nav { margin-left: auto; display: flex; align-items: center; gap: 0.25rem; }
       .nav > a {

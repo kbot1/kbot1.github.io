@@ -7,7 +7,8 @@ export const SITE = {
   initials: 'KB',
   // Photo de profil : déposez un fichier dans /public (ex. /portrait.jpg)
   // et indiquez son chemin ici. Laissez vide pour afficher les initiales.
-  portrait: '',
+  portrait: '/portrait.jpg',
+  portraitMini: '/portrait-mini.jpg',
   role: {
     fr: 'MD, MSc · Oncologue-radiothérapeute au Centre de radiothérapie de Saint-Germain-en-Laye',
     en: 'MD, MSc · Radiation oncologist at the Saint-Germain-en-Laye Radiotherapy Center',
