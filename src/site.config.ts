@@ -9,8 +9,8 @@ export const SITE = {
   // et indiquez son chemin ici. Laissez vide pour afficher les initiales.
   portrait: '',
   role: {
-    fr: 'Médecin oncologue-radiothérapeute · Doctorant',
-    en: 'Radiation oncologist · PhD candidate',
+    fr: 'Médecin oncologue-radiothérapeute',
+    en: 'Radiation oncologist',
   },
   bio: {
     fr: "Ce site rassemble mes travaux en oncologie-radiothérapie : articles scientifiques, posters, communications orales et résumés de congrès, ainsi que des cartes mentales interactives, des photos et des vidéos.",
@@ -23,7 +23,7 @@ export const SITE = {
     { label: 'GitHub', url: 'https://github.com/kbot1' },
     { label: 'X / Twitter', url: 'https://twitter.com/KBerthelot_MD' },
     { label: 'ORCID', url: '' },
-    { label: 'PubMed', url: '' },
+    { label: 'PubMed', url: 'https://pubmed.ncbi.nlm.nih.gov/?term=Berthelot+Kevin%5BAuthor%5D+OR+(Berthelot+K%5BAuthor%5D+AND+(radiotherapy+OR+radiation))' },
     { label: 'Google Scholar', url: '' },
     { label: 'LinkedIn', url: '' },
   ],
