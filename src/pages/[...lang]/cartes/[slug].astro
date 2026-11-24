@@ -1,0 +1,31 @@
+---
+import { getCollection, type CollectionEntry } from 'astro:content';
+import Base from '../../../layouts/Base.astro';
+import Mindmap from '../../../components/Mindmap.astro';
+import { useT, tr, href, langFromParam } from '../../../i18n';
+
+export async function getStaticPaths() {
+  const cartes = await getCollection('cartes');
+  return [undefined, 'en'].flatMap((lang) => cartes.map((c) => ({ params: { lang, slug: c.id }, props: { carte: c } })));
+}
+const { carte } = Astro.props as { carte: CollectionEntry<'cartes'> };
+const lang = langFromParam(Astro.params.lang);
+const t = useT(lang);
+---
+
+<Base lang={lang} title={tr(carte.data, 'title', lang)} description={tr(carte.data, 'description', lang)}>
+  <div class="container">
+    <header class="page-head slim">
+      <a class="small" href={href(lang, '/cartes/')} style="text-decoration:none">← {t('back')}</a>
+      <h1>{tr(carte.data, 'title', lang)}</h1>
+      <p>{tr(carte.data, 'description', lang)}</p>
+    </header>
+    <Mindmap markdown={carte.body ?? ''} lang={lang} expandLevel={carte.data.expandLevel} />
+    <p class="muted small">{t('cartes.intro')}</p>
+  </div>
+</Base>
+
+<style>
+  .slim { padding-top: 2rem; margin-bottom: 1.25rem; }
+  .slim h1 { margin-top: 0.6rem; }
+</style>

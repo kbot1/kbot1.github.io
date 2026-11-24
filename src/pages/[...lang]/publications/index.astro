@@ -1,0 +1,21 @@
+---
+import Base from '../../../layouts/Base.astro';
+import FilterableList from '../../../components/FilterableList.astro';
+import { useT, langFromParam, langPaths } from '../../../i18n';
+import { getTravaux } from '../../../lib';
+
+export const getStaticPaths = langPaths;
+const lang = langFromParam(Astro.params.lang);
+const t = useT(lang);
+const items = await getTravaux(['article']);
+---
+
+<Base lang={lang} title={t('nav.publications')}>
+  <div class="container">
+    <header class="page-head">
+      <h1>{t('nav.publications')}</h1>
+      <p>{t('pubs.intro')}</p>
+    </header>
+    <FilterableList items={items} lang={lang} />
+  </div>
+</Base>

@@ -1,0 +1,92 @@
+---
+import { useT, type Lang } from '../i18n';
+import type { Travail } from '../lib';
+import TravailItem from './TravailItem.astro';
+
+interface Props {
+  items: Travail[];
+  lang: Lang;
+  types?: Travail['data']['type'][]; // affiche des filtres par type si plusieurs
+}
+const { items, lang, types = [] } = Astro.props;
+const t = useT(lang);
+const years = [...new Set(items.map((i) => i.data.date.getFullYear()))].sort((a, b) => b - a);
+const counts = Object.fromEntries(types.map((ty) => [ty, items.filter((i) => i.data.type === ty).length]));
+---
+
+<div class="filterable">
+  <div class="toolbar">
+    <input class="input search" type="search" placeholder={t('search')} aria-label={t('search')} />
+    <select class="input year" aria-label={t('year')}>
+      <option value="">{t('allYears')}</option>
+      {years.map((y) => <option value={y}>{y}</option>)}
+    </select>
+  </div>
+  {
+    types.length > 1 && (
+      <div class="chips type-chips" role="group">
+        <button class="btn" data-type="" aria-pressed="true">
+          {t('all')} <span class="n">{items.length}</span>
+        </button>
+        {types.map((ty) => (
+          <button class="btn" data-type={ty} aria-pressed="false">
+            {t(`type.${ty}`)} <span class="n">{counts[ty]}</span>
+          </button>
+        ))}
+      </div>
+    )
+  }
+  <p class="count muted small"><span class="n-visible">{items.length}</span> {t('results')}</p>
+
+  <div class="list">
+    {items.map((item) => <TravailItem item={item} lang={lang} />)}
+  </div>
+  <p class="empty muted" hidden>{t('noResult')}</p>
+</div>
+
+<style>
+  .toolbar { display: flex; gap: 0.75rem; flex-wrap: wrap; }
+  .search { flex: 1 1 280px; }
+  .type-chips { margin-top: 1rem; }
+  .n { opacity: 0.65; font-variant-numeric: tabular-nums; }
+  .count { margin: 1rem 0 0; }
+</style>
+
+<script>
+  document.querySelectorAll<HTMLElement>('.filterable').forEach((root) => {
+    const search = root.querySelector<HTMLInputElement>('.search')!;
+    const year = root.querySelector<HTMLSelectElement>('.year')!;
+    const chips = root.querySelectorAll<HTMLButtonElement>('.type-chips .btn');
+    const items = root.querySelectorAll<HTMLElement>('.item');
+    const nVisible = root.querySelector('.n-visible')!;
+    const empty = root.querySelector<HTMLElement>('.empty')!;
+    let type = new URLSearchParams(location.search).get('type') || '';
+
+    function apply() {
+      const q = search.value.trim().toLowerCase().normalize('NFD').replace(/\p{Diacritic}/gu, '');
+      const y = year.value;
+      let n = 0;
+      items.forEach((it) => {
+        const text = (it.dataset.text || '').normalize('NFD').replace(/\p{Diacritic}/gu, '');
+        const ok = (!type || it.dataset.type === type) && (!y || it.dataset.year === y) && (!q || q.split(/\s+/).every((w) => text.includes(w)));
+        it.hidden = !ok;
+        if (ok) n++;
+      });
+      nVisible.textContent = String(n);
+      empty.hidden = n > 0;
+      chips.forEach((c) => c.setAttribute('aria-pressed', String((c.dataset.type || '') === type)));
+    }
+    chips.forEach((c) =>
+      c.addEventListener('click', () => {
+        type = c.dataset.type || '';
+        const url = new URL(location.href);
+        type ? url.searchParams.set('type', type) : url.searchParams.delete('type');
+        history.replaceState(null, '', url);
+        apply();
+      }),
+    );
+    search.addEventListener('input', apply);
+    year.addEventListener('change', apply);
+    apply();
+  });
+</script>

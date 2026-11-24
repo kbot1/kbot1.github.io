@@ -1,0 +1,94 @@
+---
+import { Transformer } from 'markmap-lib/no-plugins';
+import { useT, type Lang } from '../i18n';
+
+interface Props {
+  markdown: string;
+  lang: Lang;
+  height?: string;
+  expandLevel?: number;
+  toolbar?: boolean;
+}
+const { markdown, lang, height = '72vh', expandLevel = 2, toolbar = true } = Astro.props;
+const t = useT(lang);
+// La conversion Markdown → arbre se fait au moment de la construction du site.
+const { root } = new Transformer().transform(markdown);
+---
+
+<div class="mindmap" data-root={JSON.stringify(root)} data-level={expandLevel} style={`--h:${height}`}>
+  {
+    toolbar && (
+      <div class="mm-toolbar">
+        <button class="btn" data-act="fit">{t('mm.fit')}</button>
+        <button class="btn" data-act="expand">{t('mm.expand')}</button>
+        <button class="btn" data-act="collapse">{t('mm.collapse')}</button>
+        <button class="btn" data-act="full">{t('mm.full')}</button>
+      </div>
+    )
+  }
+  <svg></svg>
+</div>
+
+<style>
+  .mindmap {
+    position: relative;
+    height: var(--h);
+    min-height: 320px;
+    border: 1px solid var(--line);
+    border-radius: var(--radius);
+    background:
+      radial-gradient(circle at 1px 1px, color-mix(in srgb, var(--muted) 22%, transparent) 1px, transparent 0) 0 0 / 22px 22px,
+      var(--bg-card);
+    overflow: hidden;
+  }
+  .mindmap:fullscreen { height: 100vh; border-radius: 0; }
+  .mindmap svg { width: 100%; height: 100%; display: block; }
+  .mm-toolbar {
+    position: absolute; z-index: 2; top: 0.75rem; right: 0.75rem; display: flex; gap: 0.4rem; flex-wrap: wrap; justify-content: flex-end;
+  }
+  .mm-toolbar .btn { padding: 0.3em 0.8em; font-size: 0.78rem; box-shadow: var(--shadow); }
+  .mindmap :global(.markmap-foreign) { font-family: var(--sans); color: var(--text); }
+  .mindmap :global(.markmap) { --markmap-text-color: var(--text); --markmap-circle-open-bg: var(--bg-card); }
+</style>
+
+<script>
+  import { Markmap } from 'markmap-view';
+
+  type Node = { children?: Node[]; payload?: Record<string, unknown> };
+  const palette = ['#1d4e89', '#1f7a5a', '#8a5a00', '#6b4c9a', '#b42318', '#0e7490', '#4d5b6b'];
+
+  function setFold(node: Node, depth: number, maxOpen: number) {
+    node.payload = { ...node.payload, fold: depth >= maxOpen && node.children?.length ? 1 : 0 };
+    node.children?.forEach((c) => setFold(c, depth + 1, maxOpen));
+  }
+
+  document.querySelectorAll<HTMLElement>('.mindmap').forEach((el) => {
+    const root = JSON.parse(el.dataset.root || '{}') as Node;
+    const level = Number(el.dataset.level || 2);
+    setFold(root, 0, level);
+    const mm = Markmap.create(el.querySelector('svg')!, {
+      duration: 350,
+      maxWidth: 280,
+      spacingVertical: 8,
+      spacingHorizontal: 90,
+      paddingX: 10,
+      color: (node: any) => palette[(node.state?.path?.split('.')[1] ?? 0) % palette.length],
+    } as any, root as any);
+
+    el.querySelectorAll<HTMLButtonElement>('[data-act]').forEach((b) =>
+      b.addEventListener('click', () => {
+        const act = b.dataset.act;
+        if (act === 'fit') mm.fit();
+        if (act === 'expand' || act === 'collapse') {
+          setFold(root, 0, act === 'expand' ? 99 : 1);
+          mm.setData(root as any).then(() => mm.fit());
+        }
+        if (act === 'full') {
+          document.fullscreenElement ? document.exitFullscreen() : el.requestFullscreen?.();
+          setTimeout(() => mm.fit(), 300);
+        }
+      }),
+    );
+    new ResizeObserver(() => mm.fit()).observe(el);
+  });
+</script>

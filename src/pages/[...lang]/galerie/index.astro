@@ -1,0 +1,167 @@
+---
+import { getCollection } from 'astro:content';
+import Base from '../../../layouts/Base.astro';
+import { useT, tr, fmtDate, langFromParam, langPaths } from '../../../i18n';
+import { videoEmbed, youtubeThumb } from '../../../lib';
+
+export const getStaticPaths = langPaths;
+const lang = langFromParam(Astro.params.lang);
+const t = useT(lang);
+
+const items = (await getCollection('galerie'))
+  .sort((a, b) => (b.data.date?.getTime() ?? 0) - (a.data.date?.getTime() ?? 0))
+  .map((e) => {
+    const d = e.data;
+    const embed = d.kind === 'video' ? videoEmbed(d.src) : null;
+    return {
+      id: e.id,
+      kind: d.kind,
+      album: d.album,
+      title: tr(d, 'title', lang),
+      caption: tr(d, 'caption', lang),
+      date: d.date ? fmtDate(d.date, lang, 'month') : '',
+      thumb: d.thumb ?? (d.kind === 'photo' ? d.src : youtubeThumb(d.src)),
+      full: embed ? embed.src : d.src,
+      embed: embed?.kind ?? 'image',
+    };
+  });
+const albums = [...new Set(items.map((i) => i.album))];
+---
+
+<Base lang={lang} title={t('nav.galerie')}>
+  <div class="container">
+    <header class="page-head">
+      <h1>{t('nav.galerie')}</h1>
+      <p>{t('galerie.intro')}</p>
+    </header>
+
+    {
+      albums.length > 1 && (
+        <div class="chips albums" role="group">
+          <button class="btn" data-album="" aria-pressed="true">{t('all')}</button>
+          {albums.map((a) => (
+            <button class="btn" data-album={a} aria-pressed="false">{a}</button>
+          ))}
+        </div>
+      )
+    }
+
+    <div class="masonry">
+      {
+        items.map((it, i) => (
+          <figure class="tile" data-album={it.album}>
+            <button class="open" data-index={i} aria-label={it.title}>
+              {it.thumb ? <img src={it.thumb} alt={it.title} loading="lazy" /> : <div class="ph">▶</div>}
+              {it.kind === 'video' && <span class="play" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M8 5v14l11-7z" fill="currentColor" /></svg></span>}
+            </button>
+            <figcaption>
+              <strong>{it.title}</strong>
+              {it.date && <span class="muted small"> · {it.date}</span>}
+            </figcaption>
+          </figure>
+        ))
+      }
+    </div>
+  </div>
+
+  <dialog class="viewer lightbox" data-items={JSON.stringify(items)}>
+    <div class="lb-stage"></div>
+    <div class="lb-cap"><strong class="lb-title"></strong> <span class="lb-text"></span></div>
+    <button class="lb-btn lb-prev" aria-label={t('prev')}>‹</button>
+    <button class="lb-btn lb-next" aria-label={t('next')}>›</button>
+    <button class="lb-btn lb-close" aria-label={t('close')}>✕</button>
+  </dialog>
+</Base>
+
+<style>
+  .albums { margin-bottom: 1.5rem; }
+  .masonry { columns: 3 280px; column-gap: 1.25rem; }
+  .tile { break-inside: avoid; margin: 0 0 1.25rem; }
+  .tile[hidden] { display: none; }
+  .open {
+    position: relative; display: block; width: 100%; padding: 0; border: 0; border-radius: var(--radius); overflow: hidden;
+    cursor: zoom-in; background: var(--bg-soft);
+  }
+  .open img { display: block; width: 100%; height: auto; transition: transform 0.35s; }
+  .open:hover img { transform: scale(1.03); }
+  .ph { aspect-ratio: 16/9; display: grid; place-items: center; font-size: 2rem; color: var(--muted); }
+  .play {
+    position: absolute; inset: 0; margin: auto; width: 62px; height: 62px; border-radius: 50%; display: grid; place-items: center;
+    background: rgb(0 0 0 / 0.55); color: #fff; backdrop-filter: blur(4px);
+  }
+  .play svg { width: 30px; height: 30px; margin-left: 4px; }
+  figcaption { margin-top: 0.45rem; font-size: 0.92rem; }
+
+  .lightbox { width: 96vw; height: 96vh; overflow: hidden; }
+  .lb-stage { position: absolute; inset: 0 0 4.5rem; display: grid; place-items: center; }
+    .lb-stage :global(img) { max-width: 100%; max-height: 100%; object-fit: contain; }
+  .lb-stage :global(.embed) { width: min(100%, calc((96vh - 5rem) * 16 / 9)); }
+  .lb-cap { position: absolute; left: 0; right: 0; bottom: 0; height: 4rem; text-align: center; color: #e5e7eb; font-size: 0.95rem; padding: 0 4rem; }
+  .lb-btn {
+    position: absolute; top: 50%; transform: translateY(-50%); width: 48px; height: 48px; border-radius: 50%; border: 0;
+    background: rgb(255 255 255 / 0.12); color: #fff; font-size: 1.8rem; line-height: 1; cursor: pointer;
+  }
+  .lb-btn:hover { background: rgb(255 255 255 / 0.25); }
+  .lb-prev { left: 0.5rem; }
+  .lb-next { right: 0.5rem; }
+  .lb-close { top: 1.6rem; right: 0.5rem; font-size: 1.1rem; }
+</style>
+
+<script>
+  type Item = { kind: string; title: string; caption: string; full: string; embed: string; album: string };
+  const dlg = document.querySelector<HTMLDialogElement>('.lightbox')!;
+  const items: Item[] = JSON.parse(dlg.dataset.items || '[]');
+  const stage = dlg.querySelector<HTMLElement>('.lb-stage')!;
+  const tiles = [...document.querySelectorAll<HTMLElement>('.tile')];
+  let idx = 0;
+
+  const visible = () => tiles.map((t, i) => (t.hidden ? -1 : i)).filter((i) => i >= 0);
+
+  function show(i: number) {
+    idx = i;
+    const it = items[i];
+    stage.innerHTML = '';
+    if (it.embed === 'image') {
+      const img = document.createElement('img');
+      img.src = it.full;
+      img.alt = it.title;
+      stage.append(img);
+    } else {
+      const box = document.createElement('div');
+      box.className = 'embed';
+      const el = document.createElement(it.embed === 'iframe' ? 'iframe' : 'video') as HTMLIFrameElement & HTMLVideoElement;
+      el.src = it.embed === 'iframe' ? it.full + '?autoplay=1' : it.full;
+      if (it.embed === 'iframe') { el.allow = 'autoplay; fullscreen; encrypted-media'; el.allowFullscreen = true; }
+      else { el.controls = true; el.autoplay = true; }
+      box.append(el);
+      stage.append(box);
+    }
+    dlg.querySelector('.lb-title')!.textContent = it.title;
+    dlg.querySelector('.lb-text')!.textContent = it.caption ? `— ${it.caption}` : '';
+  }
+  function step(dir: number) {
+    const v = visible();
+    const pos = v.indexOf(idx);
+    show(v[(pos + dir + v.length) % v.length]);
+  }
+
+  document.querySelectorAll<HTMLButtonElement>('.open').forEach((b) =>
+    b.addEventListener('click', () => { show(Number(b.dataset.index)); dlg.showModal(); }),
+  );
+  dlg.querySelector('.lb-prev')!.addEventListener('click', () => step(-1));
+  dlg.querySelector('.lb-next')!.addEventListener('click', () => step(1));
+  dlg.querySelector('.lb-close')!.addEventListener('click', () => dlg.close());
+  dlg.addEventListener('close', () => (stage.innerHTML = ''));
+  dlg.addEventListener('keydown', (e) => {
+    if (e.key === 'ArrowLeft') step(-1);
+    if (e.key === 'ArrowRight') step(1);
+  });
+
+  document.querySelectorAll<HTMLButtonElement>('.albums .btn').forEach((b) =>
+    b.addEventListener('click', () => {
+      const a = b.dataset.album || '';
+      tiles.forEach((t) => (t.hidden = !!a && t.dataset.album !== a));
+      document.querySelectorAll('.albums .btn').forEach((x) => x.setAttribute('aria-pressed', String(x === b)));
+    }),
+  );
+</script>

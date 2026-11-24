@@ -1,0 +1,113 @@
+---
+import type { Travail } from '../lib';
+import { vancouver } from '../lib';
+import { SITE } from '../site.config';
+import { useT, tr, href, fmtDate, type Lang } from '../i18n';
+
+interface Props {
+  item: Travail;
+  lang: Lang;
+  compact?: boolean;
+}
+const { item, lang, compact = false } = Astro.props;
+const d = item.data;
+const t = useT(lang);
+const title = tr(d, 'title', lang);
+const link = href(lang, `/travaux/${item.id}/`);
+const searchText = [d.title, d.title_en, d.authors.join(' '), d.venue, d.location, d.tags.join(' ')].join(' ').toLowerCase();
+const dateStyle = d.type === 'article' ? 'year' : 'month';
+---
+
+<article
+  class:list={['item', d.type, { compact }]}
+  data-type={d.type}
+  data-year={d.date.getFullYear()}
+  data-text={searchText}
+>
+  <div class="meta-top">
+    <span class:list={['badge', d.type]}>{t(`type.${d.type}`)}</span>
+    {d.example && <span class="badge example">{t('example')}</span>}
+    <span class="date muted small">{fmtDate(d.date, lang, dateStyle)}</span>
+  </div>
+  <h3><a href={link}>{title}</a></h3>
+  {
+    !compact && d.authors.length > 0 && (
+      <p class="authors">
+        {d.authors.map((a, i) => (
+          <>
+            {a === SITE.authorName ? <strong>{a}</strong> : a}
+            {i < d.authors.length - 1 ? ', ' : ''}
+          </>
+        ))}
+      </p>
+    )
+  }
+  <p class="venue">
+    <em>{d.venue}</em>{d.location && <span> · {d.location}</span>}{d.type === 'article' && d.volume && <span>. {d.volume}</span>}
+  </p>
+  {
+    !compact && (
+      <div class="chips actions">
+        {d.pdf && <a class="btn" href={d.pdf} target="_blank">{t('pdf')}</a>}
+        {d.doi && <a class="btn" href={`https://doi.org/${d.doi}`} target="_blank" rel="noopener">DOI</a>}
+        {d.pmid && <a class="btn" href={`https://pubmed.ncbi.nlm.nih.gov/${d.pmid}/`} target="_blank" rel="noopener">PubMed</a>}
+        {d.poster && <a class="btn" href={link}>{t('poster')}</a>}
+        {d.slides && <a class="btn" href={link}>{t('slides')}</a>}
+        {d.video && <a class="btn" href={link}>▶ {t('video')}</a>}
+        <button class="btn cite-btn" data-cite={vancouver(d)} data-copied={t('copied')}>{t('cite')}</button>
+      </div>
+    )
+  }
+</article>
+
+<style>
+  .item {
+    position: relative;
+    padding: 1.2rem 0 1.25rem 1.1rem;
+    border-bottom: 1px solid var(--line);
+  }
+  .item::before {
+    content: '';
+    position: absolute;
+    left: 0;
+    top: 1.35rem;
+    bottom: 1.4rem;
+    width: 3px;
+    border-radius: 3px;
+    background: var(--c, var(--accent));
+    opacity: 0.7;
+  }
+  .item.article { --c: var(--c-article); }
+  .item.poster { --c: var(--c-poster); }
+  .item.oral { --c: var(--c-oral); }
+  .item.resume { --c: var(--c-resume); }
+  .meta-top { display: flex; align-items: center; gap: 0.5rem; flex-wrap: wrap; margin-bottom: 0.35rem; }
+  .date { margin-left: auto; }
+  h3 { margin: 0 0 0.25rem; font-size: 1.12rem; }
+  h3 a { color: var(--text); text-decoration: none; }
+  h3 a:hover { color: var(--accent); text-decoration: underline; }
+  .authors { margin: 0; font-size: 0.92rem; color: var(--muted); }
+  .authors strong { color: var(--text); }
+  .venue { margin: 0.1rem 0 0; font-size: 0.92rem; color: var(--muted); }
+  .actions { margin-top: 0.7rem; }
+  .actions .btn { padding: 0.25em 0.75em; font-size: 0.8rem; }
+  .compact { padding-top: 0.9rem; padding-bottom: 0.9rem; }
+  .compact h3 { font-size: 1.02rem; }
+</style>
+
+<script>
+  document.querySelectorAll<HTMLButtonElement>('.cite-btn').forEach((b) => {
+    if (b.dataset.bound) return;
+    b.dataset.bound = '1';
+    b.addEventListener('click', async () => {
+      const label = b.textContent;
+      try {
+        await navigator.clipboard.writeText(b.dataset.cite || '');
+        b.textContent = b.dataset.copied || '✓';
+      } catch {
+        window.prompt('', b.dataset.cite || '');
+      }
+      setTimeout(() => (b.textContent = label), 1600);
+    });
+  });
+</script>

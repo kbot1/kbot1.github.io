@@ -1,0 +1,30 @@
+// ─────────────────────────────────────────────────────────────
+//  Informations personnelles : modifiez ce fichier en premier.
+// ─────────────────────────────────────────────────────────────
+
+export const SITE = {
+  name: 'Kevin Berthelot',
+  initials: 'KB',
+  // Photo de profil : déposez un fichier dans /public (ex. /portrait.jpg)
+  // et indiquez son chemin ici. Laissez vide pour afficher les initiales.
+  portrait: '',
+  role: {
+    fr: 'Médecin oncologue-radiothérapeute · Doctorant',
+    en: 'Radiation oncologist · PhD candidate',
+  },
+  bio: {
+    fr: "Ce site rassemble mes travaux en oncologie-radiothérapie : articles scientifiques, posters, communications orales et résumés de congrès, ainsi que des cartes mentales interactives, des photos et des vidéos.",
+    en: 'This site gathers my work in radiation oncology: scientific articles, posters, oral presentations and conference abstracts, along with interactive mind maps, photos and videos.',
+  },
+  // Votre nom tel qu'il apparaît dans les listes d'auteurs : il sera mis en gras.
+  authorName: 'Berthelot K',
+  email: '',
+  links: [
+    { label: 'GitHub', url: 'https://github.com/kbot1' },
+    { label: 'X / Twitter', url: 'https://twitter.com/KBerthelot_MD' },
+    { label: 'ORCID', url: '' },
+    { label: 'PubMed', url: '' },
+    { label: 'Google Scholar', url: '' },
+    { label: 'LinkedIn', url: '' },
+  ],
+};

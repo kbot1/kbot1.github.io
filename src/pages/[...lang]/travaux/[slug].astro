@@ -1,0 +1,182 @@
+---
+import { render } from 'astro:content';
+import Base from '../../../layouts/Base.astro';
+import { SITE } from '../../../site.config';
+import { useT, tr, href, fmtDate, langFromParam } from '../../../i18n';
+import { getTravaux, videoEmbed, vancouver, isPdf, type Travail } from '../../../lib';
+
+export async function getStaticPaths() {
+  const items = await getTravaux();
+  return [undefined, 'en'].flatMap((lang) => items.map((item) => ({ params: { lang, slug: item.id }, props: { item } })));
+}
+
+const { item } = Astro.props as { item: Travail };
+const lang = langFromParam(Astro.params.lang);
+const t = useT(lang);
+const d = item.data;
+const { Content } = await render(item);
+const title = tr(d, 'title', lang);
+const video = d.video ? videoEmbed(d.video) : null;
+const backPath = d.type === 'article' ? '/publications/' : '/congres/';
+const slidesIsPdf = isPdf(d.slides);
+---
+
+<Base lang={lang} title={title} image={d.poster}>
+  <div class="container">
+    <header class="page-head">
+      <a class="back small" href={href(lang, backPath)}>← {t('back')}</a>
+      <div class="chips tags">
+        <span class:list={['badge', d.type]}>{t(`type.${d.type}`)}</span>
+        {d.example && <span class="badge example">{t('example')}</span>}
+      </div>
+      <h1>{title}</h1>
+      {lang === 'en' && d.title_en && <p class="orig">{d.title}</p>}
+      <p class="authors">
+        {d.authors.map((a, i) => (
+          <>
+            {a === SITE.authorName ? <strong>{a}</strong> : a}
+            {i < d.authors.length - 1 ? ', ' : ''}
+          </>
+        ))}
+      </p>
+      <p class="venue">
+        <em>{d.venue}</em>{d.location && ` · ${d.location}`} · {fmtDate(d.date, lang, d.type === 'article' ? 'month' : 'long')}
+        {d.volume && <span> · {d.volume}</span>}
+      </p>
+      <div class="chips actions">
+        {d.pdf && <a class="btn primary" href={d.pdf} target="_blank">{t('openPdf')}</a>}
+        {d.doi && <a class="btn" href={`https://doi.org/${d.doi}`} target="_blank" rel="noopener">DOI : {d.doi}</a>}
+        {d.pmid && <a class="btn" href={`https://pubmed.ncbi.nlm.nih.gov/${d.pmid}/`} target="_blank" rel="noopener">PubMed</a>}
+        {d.url && <a class="btn" href={d.url} target="_blank" rel="noopener">Web ↗</a>}
+        <button class="btn cite-btn" data-cite={vancouver(d)} data-copied={t('copied')}>{t('cite')}</button>
+      </div>
+      {d.tags.length > 0 && <p class="kw small muted">{d.tags.map((k) => `#${k}`).join('  ')}</p>}
+    </header>
+
+    <div class="layout">
+      <div class="main">
+        {
+          d.poster && (
+            <section>
+              <h2>{t('poster')}</h2>
+              <button class="poster-btn" aria-label={t('poster')}>
+                <img src={d.poster} alt={title} loading="lazy" />
+              </button>
+              <p class="muted small">{t('zoomHint')}</p>
+              <dialog class="viewer poster-dialog">
+                <form method="dialog"><button class="close btn">{t('close')} ✕</button></form>
+                <div class="zoom-wrap"><img src={d.poster} alt={title} /></div>
+              </dialog>
+            </section>
+          )
+        }
+
+        {
+          video && (
+            <section>
+              <h2>{t('video')}</h2>
+              <div class="embed">
+                {video.kind === 'iframe' ? (
+                  <iframe src={video.src} title={title} loading="lazy" allow="accelerometer; encrypted-media; picture-in-picture; fullscreen" allowfullscreen />
+                ) : (
+                  <video src={video.src} controls preload="metadata" />
+                )}
+              </div>
+            </section>
+          )
+        }
+
+        {
+          d.slides && (
+            <section>
+              <h2>{t('slides')}</h2>
+              {slidesIsPdf ? (
+                <>
+                  <object class="pdf-frame" data={d.slides} type="application/pdf">
+                    <a class="btn" href={d.slides}>{t('openPdf')}</a>
+                  </object>
+                  <p><a class="btn" href={d.slides} target="_blank">{t('openPdf')} ↗</a></p>
+                </>
+              ) : (
+                <div class="embed">
+                  <iframe src={d.slides} title={t('slides')} loading="lazy" allowfullscreen />
+                </div>
+              )}
+            </section>
+          )
+        }
+
+        {
+          d.pdf && !d.poster && (
+            <section>
+              <h2>{t('pdf')}</h2>
+              <object class="pdf-frame" data={d.pdf} type="application/pdf">
+                <a class="btn" href={d.pdf}>{t('openPdf')}</a>
+              </object>
+            </section>
+          )
+        }
+
+        {
+          item.body?.trim() && (
+            <section class="abstract">
+              <h2>{t('abstract')}</h2>
+              <div class="prose">
+                <Content />
+              </div>
+            </section>
+          )
+        }
+      </div>
+    </div>
+  </div>
+</Base>
+
+<style>
+  .back { text-decoration: none; display: inline-block; margin-bottom: 1rem; }
+  .tags { margin-bottom: 0.6rem; }
+  .orig { margin: -0.2rem 0 0.6rem; font-style: italic; }
+  .authors { margin: 0.4rem 0 0.2rem; color: var(--muted); }
+  .authors strong { color: var(--text); }
+  .venue { margin: 0 0 1rem; color: var(--muted); }
+  .kw { margin-top: 1rem; }
+  section h2 { font-size: 1.3rem; margin-top: 2rem; }
+  .main > section:first-child h2 { margin-top: 0; }
+  .poster-btn { display: block; padding: 0; border: 1px solid var(--line); border-radius: var(--radius); overflow: hidden; cursor: zoom-in; background: var(--bg-soft); max-width: 820px; }
+  .poster-btn img { display: block; width: 100%; height: auto; }
+  .poster-dialog .close { position: fixed; top: 1rem; right: 1rem; z-index: 2; background: #fff; color: #111; }
+  .zoom-wrap { width: 96vw; height: 96vh; overflow: auto; display: grid; place-items: center; cursor: zoom-in; }
+  .zoom-wrap img { max-width: 100%; max-height: 100%; transition: none; }
+  .zoom-wrap.zoomed { cursor: zoom-out; place-items: start; }
+  .zoom-wrap.zoomed img { max-width: none; max-height: none; width: 220%; }
+</style>
+
+<script>
+  const btn = document.querySelector('.poster-btn');
+  const dlg = document.querySelector<HTMLDialogElement>('.poster-dialog');
+  const wrap = document.querySelector<HTMLElement>('.zoom-wrap');
+  btn?.addEventListener('click', () => dlg?.showModal());
+  wrap?.addEventListener('click', (e) => {
+    const zoomed = wrap.classList.toggle('zoomed');
+    if (zoomed) {
+      const r = wrap.getBoundingClientRect();
+      const fx = (e.clientX - r.left) / r.width, fy = (e.clientY - r.top) / r.height;
+      requestAnimationFrame(() => {
+        wrap.scrollLeft = fx * wrap.scrollWidth - r.width / 2;
+        wrap.scrollTop = fy * wrap.scrollHeight - r.height / 2;
+      });
+    }
+  });
+  dlg?.addEventListener('click', (e) => { if (e.target === dlg) dlg.close(); });
+
+  document.querySelectorAll<HTMLButtonElement>('.cite-btn').forEach((b) => {
+    if (b.dataset.bound) return;
+    b.dataset.bound = '1';
+    b.addEventListener('click', async () => {
+      const label = b.textContent;
+      try { await navigator.clipboard.writeText(b.dataset.cite || ''); b.textContent = b.dataset.copied || '✓'; }
+      catch { window.prompt('', b.dataset.cite || ''); }
+      setTimeout(() => (b.textContent = label), 1600);
+    });
+  });
+</script>

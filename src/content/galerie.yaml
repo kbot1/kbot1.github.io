@@ -1,0 +1,57 @@
+# ─── GALERIE ───
+# Déposez vos photos dans public/galerie/ puis ajoutez une entrée ci-dessous.
+# kind: photo ou video. Pour une vidéo, src peut être un lien YouTube / Vimeo ou un fichier .mp4.
+# album sert aux filtres de la galerie.
+
+- id: congres-salle
+  kind: photo
+  src: /galerie/congres-salle.svg
+  title: Congrès – salle plénière
+  title_en: Conference – plenary room
+  caption: Photo d'exemple, à remplacer.
+  caption_en: Example photo, replace it.
+  album: Congrès
+  date: 2025-10-08
+
+- id: poster-session
+  kind: photo
+  src: /galerie/poster-session.svg
+  title: Session posters
+  title_en: Poster session
+  album: Congrès
+  date: 2025-10-09
+
+- id: video-exemple
+  kind: video
+  src: /galerie/exemple.mp4
+  thumb: /galerie/exemple-video.jpg
+  title: Vidéo d'exemple
+  title_en: Example video
+  caption: Un fichier .mp4 ou un lien YouTube.
+  caption_en: An .mp4 file or a YouTube link.
+  album: Vidéos
+  date: 2025-09-20
+
+- id: equipe
+  kind: photo
+  src: /galerie/equipe.svg
+  title: L'équipe du service
+  title_en: The department team
+  album: Service
+  date: 2025-06-01
+
+- id: accelerateur
+  kind: photo
+  src: /galerie/accelerateur.svg
+  title: Accélérateur linéaire
+  title_en: Linear accelerator
+  album: Service
+  date: 2025-05-12
+
+- id: enseignement
+  kind: photo
+  src: /galerie/enseignement.svg
+  title: Cours aux internes
+  title_en: Teaching residents
+  album: Enseignement
+  date: 2025-02-20

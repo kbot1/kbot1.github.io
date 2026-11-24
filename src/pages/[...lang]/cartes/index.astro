@@ -1,0 +1,54 @@
+---
+import { getCollection } from 'astro:content';
+import Base from '../../../layouts/Base.astro';
+import { useT, tr, href, fmtDate, langFromParam, langPaths } from '../../../i18n';
+
+export const getStaticPaths = langPaths;
+const lang = langFromParam(Astro.params.lang);
+const t = useT(lang);
+const cartes = (await getCollection('cartes')).sort((a, b) => b.data.date.getTime() - a.data.date.getTime());
+
+// Aperçu : les branches principales (lignes « ## » ou puces de premier niveau)
+function branches(md = '') {
+  return md
+    .split('\n')
+    .filter((l) => /^##\s|^- /.test(l))
+    .map((l) => l.replace(/^##\s+|^-\s+/, '').replace(/[*_`\[\]]/g, '').replace(/\(.*?\)/g, ''))
+    .slice(0, 6);
+}
+---
+
+<Base lang={lang} title={t('nav.cartes')}>
+  <div class="container">
+    <header class="page-head">
+      <h1>{t('nav.cartes')}</h1>
+      <p>{t('cartes.intro')}</p>
+    </header>
+    <div class="grid">
+      {
+        cartes.map((c) => (
+          <a class="card map-card" href={href(lang, `/cartes/${c.id}/`)}>
+            <svg class="glyph" viewBox="0 0 120 60" aria-hidden="true">
+              <circle cx="20" cy="30" r="6" />
+              <path d="M26 30 C 50 30, 50 10, 74 10 M26 30 H74 M26 30 C 50 30, 50 50, 74 50" />
+              <circle cx="78" cy="10" r="4" /><circle cx="78" cy="30" r="4" /><circle cx="78" cy="50" r="4" />
+              <path d="M82 10 H112 M82 30 H104 M82 50 H108" />
+            </svg>
+            <span class="muted small">{fmtDate(c.data.date, lang, 'month')}</span>
+            <h3>{tr(c.data, 'title', lang)}</h3>
+            <p class="muted small">{tr(c.data, 'description', lang)}</p>
+            <div class="chips">{branches(c.body).map((b) => <span class="badge">{b}</span>)}</div>
+          </a>
+        ))
+      }
+    </div>
+  </div>
+</Base>
+
+<style>
+  .glyph { width: 120px; height: 60px; margin-bottom: 0.5rem; }
+  .glyph circle { fill: var(--accent); }
+  .glyph path { fill: none; stroke: var(--accent); stroke-width: 2; opacity: 0.55; }
+  .map-card h3 { margin: 0.2rem 0 0.3rem; }
+  .map-card .badge { text-transform: none; letter-spacing: 0; font-weight: 500; }
+</style>
