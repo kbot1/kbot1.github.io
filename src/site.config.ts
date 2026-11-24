@@ -9,8 +9,8 @@ export const SITE = {
   // et indiquez son chemin ici. Laissez vide pour afficher les initiales.
   portrait: '',
   role: {
-    fr: 'Médecin oncologue-radiothérapeute',
-    en: 'Radiation oncologist',
+    fr: 'MD, MSc · Oncologue-radiothérapeute au Centre de radiothérapie de Saint-Germain-en-Laye',
+    en: 'MD, MSc · Radiation oncologist at the Saint-Germain-en-Laye Radiotherapy Center',
   },
   bio: {
     fr: "Ce site rassemble mes travaux en oncologie-radiothérapie : articles scientifiques, posters, communications orales et résumés de congrès, ainsi que des cartes mentales interactives, des photos et des vidéos.",
