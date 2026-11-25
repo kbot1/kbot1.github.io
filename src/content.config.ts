@@ -15,6 +15,7 @@ const travaux = defineCollection({
     title_en: z.string().optional(),
     authors: z.array(z.string()).default([]),
     date: z.coerce.date(),
+    datePrecision: z.enum(['year', 'month', 'day']).optional(), // précision de la date affichée
     venue: z.string(), // revue ou congrès
     location: z.string().optional(), // ville du congrès
     volume: z.string().optional(), // ex. « 2024;12(3):45-52 »

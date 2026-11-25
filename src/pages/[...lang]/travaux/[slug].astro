@@ -40,7 +40,7 @@ const slidesIsPdf = isPdf(d.slides);
         ))}
       </p>
       <p class="venue">
-        <em>{d.venue}</em>{d.location && ` · ${d.location}`} · {fmtDate(d.date, lang, d.type === 'article' ? 'month' : 'long')}
+        <em>{d.venue}</em>{d.location && ` · ${d.location}`} · {fmtDate(d.date, lang, d.datePrecision === 'year' ? 'year' : d.datePrecision === 'month' || d.type === 'article' ? 'month' : 'long')}
         {d.volume && <span> · {d.volume}</span>}
       </p>
       <div class="chips actions">

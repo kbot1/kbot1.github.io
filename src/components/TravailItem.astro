@@ -15,7 +15,7 @@ const t = useT(lang);
 const title = tr(d, 'title', lang);
 const link = href(lang, `/travaux/${item.id}/`);
 const searchText = [d.title, d.title_en, d.authors.join(' '), d.venue, d.location, d.tags.join(' ')].join(' ').toLowerCase();
-const dateStyle = d.type === 'article' ? 'year' : 'month';
+const dateStyle = d.datePrecision === 'year' ? 'year' : d.type === 'article' ? 'year' : 'month';
 ---
 
 <article
