@@ -2,7 +2,7 @@
 
 Site personnel de Kevin Berthelot (oncologie-radiothérapie), construit avec [Astro](https://astro.build) et publié automatiquement sur GitHub Pages à chaque modification de la branche principale.
 
-Bilingue français / anglais (`/` et `/en/`), thème clair / sombre.
+Page d'accueil : veille bibliographique en radiothérapie ORL, sein et gynécologique (un billet par article, filtres, flux RSS `/rss.xml`). Bilingue français / anglais (`/` et `/en/`), thème clair / sombre.
 
 ## Ajouter du contenu (directement depuis GitHub, sans rien installer)
 
@@ -10,6 +10,7 @@ Sur github.com, ouvrez le dossier voulu, cliquez sur **Add file → Create new f
 
 | Je veux ajouter… | Où | Comment |
 |---|---|---|
+| Un **billet de veille** (page d'accueil) | `src/content/veille/fr/` et `src/content/veille/en/` | Copier un billet existant, **même nom de fichier** dans les deux dossiers. Champs : `localisation` (orl, sein, gyn), `impact` (fort, modere), `date` = date de publication de l'article |
 | Mes infos (bio, liens ORCID, PubMed, e-mail, photo) | `src/site.config.ts` | Modifier les champs |
 | Un **article** | `src/content/travaux/` | Copier `2025-exemple-article.md`, `type: article` |
 | Un **poster** | `src/content/travaux/` + image dans `public/posters/` | `type: poster`, `poster: /posters/mon-poster.jpg` |

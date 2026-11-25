@@ -1,0 +1,99 @@
+---
+import { render } from 'astro:content';
+import Base from '../../../layouts/Base.astro';
+import { useT, href, fmtDate, langFromParam, type Lang } from '../../../i18n';
+import { getVeille, type Billet } from '../../../lib';
+
+export async function getStaticPaths() {
+  const out = [];
+  for (const lang of ['fr', 'en'] as const) {
+    const list = await getVeille(lang);
+    list.forEach(({ entry, slug }, i) => {
+      out.push({
+        params: { lang: lang === 'fr' ? undefined : 'en', slug },
+        props: {
+          entry,
+          // la liste est triée du plus récent au plus ancien
+          newer: i > 0 ? { slug: list[i - 1].slug, title: list[i - 1].entry.data.title } : null,
+          older: i < list.length - 1 ? { slug: list[i + 1].slug, title: list[i + 1].entry.data.title } : null,
+        },
+      });
+    });
+  }
+  return out;
+}
+
+type Nav = { slug: string; title: string } | null;
+const { entry, newer, older } = Astro.props as { entry: Billet; newer: Nav; older: Nav };
+const lang: Lang = langFromParam(Astro.params.lang);
+const t = useT(lang);
+const d = entry.data;
+const { Content } = await render(entry);
+---
+
+<Base lang={lang} title={d.title} description={d.summary}>
+  <article class="container">
+    <header class="page-head" data-loc={d.localisation}>
+      <a class="small back" href={href(lang, '/')}>← {t('nav.veille')}</a>
+      <div class="meta">
+        <span class:list={['badge', 'loc', d.localisation]}>{t(`loc.${d.localisation}`)}</span>
+        <span class:list={['impact', d.impact]}>{d.impact === 'fort' ? '★★' : '★'} {t(`impact.${d.impact}`)}</span>
+        <time class="muted small" datetime={d.date.toISOString().slice(0, 10)}>{fmtDate(d.date, lang, d.datePrecision === 'month' ? 'month' : 'long')}</time>
+      </div>
+      <h1>{d.title}</h1>
+      <p class="sum">{d.summary}</p>
+    </header>
+
+    <div class="layout">
+      <div class="prose"><Content /></div>
+      <aside class="ref card">
+        <dl>
+          {d.etude && (<><dt>{lang === 'fr' ? 'Étude' : 'Study'}</dt><dd>{d.etude}</dd></>)}
+          <dt>{t('design')}</dt><dd>{d.type}</dd>
+          <dt>{t('journal')}</dt><dd><em>{d.journal}</em></dd>
+          <dt>{t('pubDate')}</dt><dd>{fmtDate(d.date, lang, d.datePrecision === 'month' ? 'month' : 'long')}</dd>
+          <dt>{t('reference')}</dt><dd class="cit">{d.citation}</dd>
+        </dl>
+        <div class="chips">
+          {d.doi && <a class="btn primary" href={`https://doi.org/${d.doi}`} target="_blank" rel="noopener">DOI</a>}
+          {d.pmid && <a class="btn" href={`https://pubmed.ncbi.nlm.nih.gov/${d.pmid}/`} target="_blank" rel="noopener">PubMed</a>}
+          {d.url && <a class="btn" href={d.url} target="_blank" rel="noopener">Web ↗</a>}
+        </div>
+      </aside>
+    </div>
+
+    <nav class="pn">
+      {older ? <a class="card" href={href(lang, `/veille/${older.slug}/`)}><span class="small muted">← {t('prevPost')}</span><span>{older.title}</span></a> : <span />}
+      {newer ? <a class="card next" href={href(lang, `/veille/${newer.slug}/`)}><span class="small muted">{t('nextPost')} →</span><span>{newer.title}</span></a> : <span />}
+    </nav>
+    <p class="small muted disclaimer">{t('veille.disclaimer')}</p>
+  </article>
+</Base>
+
+<style>
+  .back { text-decoration: none; }
+  .meta { display: flex; flex-wrap: wrap; gap: 0.6rem; align-items: center; margin: 1rem 0 0.6rem; }
+  .orl { --c: #1d4e89; } .sein { --c: #b0306a; } .gyn { --c: #6b4c9a; }
+  :global(:root[data-theme='dark']) .orl { --c: #7fb0ea; }
+  :global(:root[data-theme='dark']) .sein { --c: #ef8fb7; }
+  :global(:root[data-theme='dark']) .gyn { --c: #b9a1e3; }
+  .badge.loc { color: var(--c); background: color-mix(in srgb, var(--c) 12%, transparent); }
+  .impact { font-size: 0.85rem; color: #b07d00; font-weight: 600; }
+  .impact.fort { color: #c2410c; }
+  .sum { font-size: 1.12rem !important; color: var(--text) !important; max-width: 70ch; }
+  .layout { display: grid; grid-template-columns: minmax(0, 1fr) 300px; gap: 2.5rem; align-items: start; }
+  @media (max-width: 900px) { .layout { grid-template-columns: 1fr; } .ref { order: -1; } }
+  .prose :global(h2) { font-size: 1.15rem; font-family: var(--sans); text-transform: uppercase; letter-spacing: 0.04em; color: var(--accent); margin: 1.8em 0 0.5em; }
+  .prose :global(h2:first-child) { margin-top: 0; }
+  .ref { position: sticky; top: 84px; font-size: 0.9rem; }
+  .ref dl { margin: 0 0 1rem; }
+  .ref dt { font-weight: 600; font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.04em; color: var(--muted); margin-top: 0.7rem; }
+  .ref dt:first-child { margin-top: 0; }
+  .ref dd { margin: 0.1rem 0 0; }
+  .cit { font-size: 0.85rem; line-height: 1.5; }
+  .pn { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-top: 3rem; }
+  .pn a { display: flex; flex-direction: column; gap: 0.3rem; font-family: var(--serif); font-weight: 600; }
+  .pn .next { text-align: right; }
+  @media (max-width: 600px) { .pn { grid-template-columns: 1fr; } }
+  .disclaimer { margin-top: 2rem; }
+</style>

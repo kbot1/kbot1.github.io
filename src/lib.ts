@@ -47,3 +47,13 @@ export function vancouver(d: Travail['data']): string {
 export function isPdf(p?: string) {
   return !!p && /\.pdf($|\?)/i.test(p);
 }
+
+export type Billet = CollectionEntry<'veille'>;
+
+/** Billets de veille d'une langue, du plus récent au plus ancien. slug = nom du fichier sans le dossier de langue. */
+export async function getVeille(lang: 'fr' | 'en') {
+  const all = await getCollection('veille', (e) => e.id.startsWith(`${lang}/`));
+  return all
+    .map((e) => ({ entry: e, slug: e.id.replace(/^(fr|en)\//, '') }))
+    .sort((a, b) => b.entry.data.date.getTime() - a.entry.data.date.getTime());
+}

@@ -79,4 +79,28 @@ const galerie = defineCollection({
   }),
 });
 
-export const collections = { travaux, blog, cartes, galerie };
+/**
+ * VEILLE : un billet par publication marquante, dans src/content/veille/fr/ et /en/.
+ * Le même nom de fichier dans les deux dossiers relie la version française et anglaise.
+ */
+const veille = defineCollection({
+  loader: glob({ pattern: '**/*.md', base: './src/content/veille' }),
+  schema: z.object({
+    title: z.string(),
+    date: z.coerce.date(), // date de publication de l'article
+    datePrecision: z.enum(['day', 'month']).default('day'), // 'month' si seul le mois du numéro est connu
+    localisation: z.enum(['orl', 'sein', 'gyn']),
+    impact: z.enum(['fort', 'modere']),
+    etude: z.string().optional(), // acronyme de l'essai
+    type: z.string(), // ex. « Phase 3 randomisée »
+    journal: z.string(),
+    citation: z.string(), // référence complète
+    doi: z.string().optional(),
+    pmid: z.string().optional(),
+    url: z.string().optional(),
+    summary: z.string(), // message clé en une phrase
+    tags: z.array(z.string()).default([]),
+  }),
+});
+
+export const collections = { travaux, blog, cartes, galerie, veille };

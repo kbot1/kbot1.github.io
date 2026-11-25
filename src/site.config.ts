@@ -17,8 +17,8 @@ export const SITE = {
     en: 'MD, MSc · Radiation oncologist at the Saint-Germain-en-Laye Radiotherapy Center',
   },
   bio: {
-    fr: "Ce site rassemble mes travaux en oncologie-radiothérapie : articles scientifiques, posters et résumés de congrès, ainsi que des cartes mentales interactives, des photos et des vidéos.",
-    en: 'This site gathers my work in radiation oncology: scientific articles, posters and conference abstracts, along with interactive mind maps, photos and videos.',
+    fr: "Veille bibliographique en radiothérapie des cancers ORL, du sein et gynécologiques : les publications qui font évoluer la pratique, résumées et commentées.",
+    en: 'A literature watch in radiation oncology for head and neck, breast and gynaecological cancers: the publications that change practice, summarised and discussed.',
   },
   // Votre nom tel qu'il apparaît dans les listes d'auteurs : il sera mis en gras.
   authorName: 'Berthelot K',

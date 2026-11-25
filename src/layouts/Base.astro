@@ -17,17 +17,15 @@ const basePath = stripLang(Astro.url.pathname);
 const altLang: Lang = lang === 'fr' ? 'en' : 'fr';
 
 const nav = [
-  { key: 'nav.home', path: '/' },
-  { key: 'nav.publications', path: '/publications/' },
-  { key: 'nav.congres', path: '/congres/' },
+  { key: 'nav.veille', path: '/' },
   { key: 'nav.cartes', path: '/cartes/' },
   { key: 'nav.galerie', path: '/galerie/' },
-  { key: 'nav.blog', path: '/blog/' },
+  { key: 'nav.apropos', path: '/a-propos/' },
 ] as const;
 
 function isActive(p: string) {
-  if (p === '/') return basePath === '/';
-  if (p === '/congres/' && basePath.startsWith('/travaux/')) return false;
+  if (p === '/') return basePath === '/' || basePath.startsWith('/veille/');
+  if (p === '/a-propos/') return ['/a-propos/', '/publications/', '/travaux/', '/congres/'].some((x) => basePath.startsWith(x));
   return basePath.startsWith(p);
 }
 ---
@@ -44,6 +42,7 @@ function isActive(p: string) {
     <link rel="alternate" hreflang="fr" href={new URL(href('fr', basePath), Astro.site)} />
     <link rel="alternate" hreflang="en" href={new URL(href('en', basePath), Astro.site)} />
     <link rel="sitemap" href="/sitemap-index.xml" />
+    <link rel="alternate" type="application/rss+xml" title={`${SITE.name} — ${t('veille.title')}`} href={href(lang, '/rss.xml')} />
     <meta property="og:title" content={fullTitle} />
     <meta property="og:description" content={desc} />
     <meta property="og:type" content="website" />
@@ -92,6 +91,7 @@ function isActive(p: string) {
       <div class="container foot">
         <span>© {new Date().getFullYear()} {SITE.name}</span>
         <span class="links">
+          <a href={href(lang, '/rss.xml')}>{t('rss')}</a>
           {SITE.links.filter((l) => l.url).map((l) => <a href={l.url} rel="me noopener" target="_blank">{l.label}</a>)}
         </span>
         <span class="muted small">{t('footer')}</span>

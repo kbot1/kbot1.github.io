@@ -1,155 +1,179 @@
 ---
-import { getCollection } from 'astro:content';
 import Base from '../../layouts/Base.astro';
-import TravailItem from '../../components/TravailItem.astro';
-import Mindmap from '../../components/Mindmap.astro';
 import { SITE } from '../../site.config';
-import { useT, href, tr, fmtDate, langFromParam, langPaths } from '../../i18n';
-import { getTravaux, getPosts } from '../../lib';
+import { useT, href, fmtDate, langFromParam, langPaths } from '../../i18n';
+import { getVeille } from '../../lib';
 
 export const getStaticPaths = langPaths;
 const lang = langFromParam(Astro.params.lang);
 const t = useT(lang);
+const billets = await getVeille(lang);
 
-const travaux = await getTravaux();
-const articles = travaux.filter((x) => x.data.type === 'article');
-const congres = travaux.filter((x) => x.data.type !== 'article');
-const statsAll = [
-  { n: articles.length, label: t('stats.articles'), path: '/publications/' },
-  { n: travaux.filter((x) => x.data.type === 'poster').length, label: t('stats.posters'), path: '/congres/?type=poster' },
-  { n: travaux.filter((x) => x.data.type === 'oral').length, label: t('stats.orals'), path: '/congres/?type=oral' },
-  { n: travaux.filter((x) => x.data.type === 'resume').length, label: t('stats.resumes'), path: '/congres/?type=resume' },
-];
-const stats = statsAll.filter((s) => !SITE.hiddenTypes.some((h) => s.path.includes(`type=${h}`)));
-const cartes = (await getCollection('cartes')).sort((a, b) => Number(b.data.featured) - Number(a.data.featured));
-const featured = cartes[0];
-const posts = (await getPosts()).slice(0, 3);
+// Regroupement par mois de publication
+const months = new Map<string, typeof billets>();
+for (const b of billets) {
+  const key = b.entry.data.date.toISOString().slice(0, 7);
+  if (!months.has(key)) months.set(key, []);
+  months.get(key)!.push(b);
+}
+const locs = ['orl', 'sein', 'gyn'] as const;
+const count = (l: string) => billets.filter((b) => b.entry.data.localisation === l).length;
 ---
 
-<Base lang={lang}>
-  <section class="hero">
-    <div class="container hero-in">
-      <div class="portrait">
-        {SITE.portrait ? <img src={SITE.portrait} alt={SITE.name} /> : <span>{SITE.initials}</span>}
-      </div>
+<Base lang={lang} title={t('veille.title')}>
+  <section class="intro">
+    <div class="container intro-in">
       <div>
-        <h1>{SITE.name}</h1>
-        <p class="role">{SITE.role[lang]}</p>
-        <p class="bio">{SITE.bio[lang]}</p>
-        <div class="chips">
-          {SITE.email && <a class="btn primary" href={`mailto:${SITE.email}`}>Contact</a>}
-          {SITE.links.filter((l) => l.url).map((l) => <a class="btn" href={l.url} target="_blank" rel="me noopener">{l.label}</a>)}
+        <p class="kicker">{SITE.name} · {SITE.role[lang].split('·')[0].trim()}</p>
+        <h1>{t('veille.title')} <span class="yr">2026</span></h1>
+        <p class="lead">{t('veille.lead')}</p>
+        <div class="counts">
+          <span><strong>{billets.length}</strong> {t('posts')}</span>
+          {locs.map((l) => <span class:list={['dot', l]}><strong>{count(l)}</strong> {t(`loc.${l}`)}</span>)}
         </div>
       </div>
+      {SITE.portrait && <a class="me" href={href(lang, '/a-propos/')}><img src={SITE.portrait} alt={SITE.name} /></a>}
     </div>
-    <svg class="isolines" viewBox="0 0 600 400" aria-hidden="true">
-      {[0, 1, 2, 3, 4, 5, 6].map((i) => (
-        <ellipse cx="430" cy="210" rx={60 + i * 42} ry={38 + i * 30} transform={`rotate(-18 430 210)`} />
-      ))}
-    </svg>
   </section>
 
-  <div class="container">
-    <section class="stats">
-      {stats.map((s) => (
-        <a class="stat" href={href(lang, s.path)}>
-          <strong>{s.n}</strong>
-          <span>{s.label}</span>
-        </a>
-      ))}
-    </section>
-
-    <div class="two-col">
-      <section>
-        <div class="sec-head">
-          <h2>{t('latestPubs')}</h2>
-          <a href={href(lang, '/publications/')}>{t('seeAll')} →</a>
-        </div>
-        {articles.slice(0, 4).map((item) => <TravailItem item={item} lang={lang} compact />)}
-      </section>
-      <section>
-        <div class="sec-head">
-          <h2>{t('latestTalks')}</h2>
-          <a href={href(lang, '/congres/')}>{t('seeAll')} →</a>
-        </div>
-        {congres.slice(0, 4).map((item) => <TravailItem item={item} lang={lang} compact />)}
-      </section>
+  <div class="container feed" id="feed">
+    <div class="filters">
+      <input class="input search" type="search" placeholder={t('searchVeille')} aria-label={t('searchVeille')} />
+      <div class="chips" role="group" data-group="loc">
+        <button class="btn" data-v="" aria-pressed="true">{t('allLocs')}</button>
+        {locs.map((l) => <button class:list={['btn', 'loc', l]} data-v={l} aria-pressed="false">{t(`loc.${l}`)}</button>)}
+      </div>
+      <div class="chips" role="group" data-group="impact">
+        <button class="btn" data-v="" aria-pressed="true">{t('allImpacts')}</button>
+        <button class="btn" data-v="fort" aria-pressed="false">★★ {t('impact.fort')}</button>
+        <button class="btn" data-v="modere" aria-pressed="false">★ {t('impact.modere')}</button>
+      </div>
     </div>
 
     {
-      featured && (
-        <section>
-          <div class="sec-head">
-            <h2>{t('featuredMap')} · {tr(featured.data, 'title', lang)}</h2>
-            <a href={href(lang, `/cartes/${featured.id}/`)}>{t('mm.full')} →</a>
-          </div>
-          <Mindmap markdown={featured.body ?? ''} lang={lang} height="440px" expandLevel={featured.data.expandLevel} toolbar={false} />
+      [...months.entries()].map(([key, list]) => (
+        <section class="month" data-month={key}>
+          <h2 class="month-h">{fmtDate(new Date(`${key}-15`), lang, 'month')}</h2>
+          <ol class="posts">
+            {list.map(({ entry, slug }) => {
+              const d = entry.data;
+              const text = [d.title, d.etude, d.journal, d.summary, d.tags.join(' ')].join(' ').toLowerCase();
+              return (
+                <li class:list={['post', d.localisation]} data-loc={d.localisation} data-impact={d.impact} data-text={text}>
+                  <a href={href(lang, `/veille/${slug}/`)}>
+                    <div class="meta">
+                      <time datetime={d.date.toISOString().slice(0, 10)}>{fmtDate(d.date, lang, d.datePrecision === 'month' ? 'month' : 'long')}</time>
+                      <span class:list={['badge', 'loc-badge', d.localisation]}>{t(`loc.${d.localisation}`)}</span>
+                      <span class:list={['impact', d.impact]} title={t(`impact.${d.impact}`)}>
+                        {d.impact === 'fort' ? '★★' : '★'} <span>{t(`impact.${d.impact}`)}</span>
+                      </span>
+                    </div>
+                    <h3>{d.title}</h3>
+                    <p class="sum">{d.summary}</p>
+                    <p class="src"><em>{d.journal}</em>{d.etude && <> · {d.etude}</>}</p>
+                  </a>
+                </li>
+              );
+            })}
+          </ol>
         </section>
-      )
+      ))
     }
-
-    {
-      posts.length > 0 && (
-        <section>
-          <div class="sec-head">
-            <h2>{t('latestPosts')}</h2>
-            <a href={href(lang, '/blog/')}>{t('seeAll')} →</a>
-          </div>
-          <div class="grid">
-            {posts.map((p) => (
-              <a class="card" href={href(lang, `/blog/${p.id}/`)}>
-                <span class="muted small">{fmtDate(p.data.date, lang)} · {p.data.lang.toUpperCase()}</span>
-                <h3>{p.data.title}</h3>
-                <p class="muted small">{p.data.summary}</p>
-              </a>
-            ))}
-          </div>
-        </section>
-      )
-    }
+    <p class="empty muted" hidden>{t('noResult')}</p>
+    <p class="disclaimer small muted">{t('veille.disclaimer')}</p>
   </div>
 </Base>
 
 <style>
-  .hero {
-    position: relative;
-    overflow: hidden;
-    padding: 4.5rem 0 3.5rem;
-    border-bottom: 1px solid var(--line);
-    background: linear-gradient(180deg, var(--bg-soft), var(--bg));
-  }
-  .hero-in { position: relative; z-index: 1; display: grid; grid-template-columns: auto 1fr; gap: 2.5rem; align-items: center; }
-  .portrait {
-    width: 150px; height: 150px; border-radius: 50%; overflow: hidden; display: grid; place-items: center;
-    background: var(--accent); color: var(--accent-text); font: 600 3rem var(--serif);
-    box-shadow: 0 0 0 6px var(--bg), 0 0 0 7px var(--line);
-  }
-  .portrait img { width: 100%; height: 100%; object-fit: cover; }
-  h1 { margin-bottom: 0.2rem; }
-  .role { margin: 0 0 1rem; color: var(--accent); font-weight: 600; }
-  .bio { max-width: 60ch; color: var(--muted); font-size: 1.07rem; margin: 0 0 1.3rem; }
-  .isolines { position: absolute; right: -60px; top: -20px; width: 640px; height: auto; pointer-events: none; }
-  .isolines ellipse { fill: none; stroke: var(--accent); stroke-width: 1; opacity: 0.12; }
-  @media (max-width: 700px) {
-    .hero { padding-top: 2.5rem; }
-    .hero-in { grid-template-columns: 1fr; gap: 1.25rem; }
-    .portrait { width: 104px; height: 104px; font-size: 2.1rem; }
-  }
+  .intro { padding: 3.5rem 0 2.5rem; border-bottom: 1px solid var(--line); background: linear-gradient(180deg, var(--bg-soft), var(--bg)); }
+  .intro-in { display: grid; grid-template-columns: 1fr auto; gap: 2rem; align-items: center; }
+  .kicker { margin: 0 0 0.5rem; font-size: 0.85rem; font-weight: 600; letter-spacing: 0.04em; text-transform: uppercase; color: var(--muted); }
+  h1 { margin-bottom: 0.6rem; }
+  .yr { color: var(--accent); }
+  .lead { max-width: 64ch; font-size: 1.08rem; color: var(--muted); margin: 0 0 1.2rem; }
+  .counts { display: flex; flex-wrap: wrap; gap: 0.5rem 1.4rem; font-size: 0.92rem; color: var(--muted); }
+  .counts strong { color: var(--text); font-family: var(--serif); font-size: 1.15rem; margin-right: 0.15rem; }
+  .dot::before { content: ''; display: inline-block; width: 9px; height: 9px; border-radius: 50%; margin-right: 0.45rem; background: var(--c); }
+  .me img { width: 120px; height: 120px; border-radius: 50%; object-fit: cover; box-shadow: 0 0 0 5px var(--bg), 0 0 0 6px var(--line); }
+  @media (max-width: 700px) { .intro-in { grid-template-columns: 1fr; } .me { display: none; } }
 
-  .stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 1rem; margin: 2.25rem 0 0.5rem; }
-  .stat {
-    display: flex; flex-direction: column; padding: 1rem 1.2rem; border: 1px solid var(--line); border-radius: var(--radius);
-    text-decoration: none; color: var(--muted); background: var(--bg-card); transition: border-color 0.15s;
-  }
-  .stat:hover { border-color: var(--accent); }
-  .stat strong { font: 600 2rem var(--serif); color: var(--text); line-height: 1.1; }
-  .stat span { font-size: 0.88rem; }
-  @media (max-width: 700px) { .stats { grid-template-columns: repeat(2, 1fr); } }
+  .orl { --c: #1d4e89; }
+  .sein { --c: #b0306a; }
+  .gyn { --c: #6b4c9a; }
+  :global(:root[data-theme='dark']) .orl { --c: #7fb0ea; }
+  :global(:root[data-theme='dark']) .sein { --c: #ef8fb7; }
+  :global(:root[data-theme='dark']) .gyn { --c: #b9a1e3; }
 
-  .two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 0 3rem; }
-  @media (max-width: 860px) { .two-col { grid-template-columns: 1fr; } }
-  .sec-head { display: flex; align-items: baseline; justify-content: space-between; gap: 1rem; margin-top: 2.5rem; }
-  .sec-head h2 { margin: 0 0 0.5rem; font-size: 1.4rem; }
-  .sec-head a { font-size: 0.9rem; white-space: nowrap; text-decoration: none; }
-  .card h3 { margin: 0.3rem 0; }
+  .filters { position: sticky; top: 64px; z-index: 5; display: flex; flex-wrap: wrap; gap: 0.75rem 1rem; align-items: center; padding: 1rem 0; margin-bottom: 0.5rem; background: var(--bg); border-bottom: 1px solid var(--line); }
+  .search { flex: 1 1 260px; }
+  .btn.loc[aria-pressed='true'] { background: var(--c); border-color: var(--c); }
+
+  .month { position: relative; padding-left: 1.6rem; }
+  .month::before { content: ''; position: absolute; left: 5px; top: 2.6rem; bottom: 0; width: 2px; background: var(--line); }
+  .month[hidden] { display: none; }
+  .month-h { font-size: 1.05rem; text-transform: capitalize; color: var(--muted); font-family: var(--sans); font-weight: 600; letter-spacing: 0.02em; margin: 2rem 0 0.75rem -1.6rem; }
+  .posts { list-style: none; margin: 0; padding: 0; display: grid; gap: 1rem; }
+  .post { position: relative; }
+  .post[hidden] { display: none; }
+  .post::before { content: ''; position: absolute; left: -1.6rem; top: 1.35rem; width: 12px; height: 12px; border-radius: 50%; background: var(--c); box-shadow: 0 0 0 4px var(--bg); }
+  .post > a {
+    display: block; padding: 1.1rem 1.3rem; border: 1px solid var(--line); border-left: 3px solid var(--c); border-radius: var(--radius);
+    background: var(--bg-card); color: inherit; text-decoration: none; box-shadow: var(--shadow); transition: box-shadow 0.2s, transform 0.2s;
+  }
+  .post > a:hover { box-shadow: var(--shadow-lg); transform: translateY(-2px); }
+  .meta { display: flex; flex-wrap: wrap; align-items: center; gap: 0.5rem 0.75rem; font-size: 0.85rem; color: var(--muted); }
+  .loc-badge { --c: inherit; }
+  .post .badge { color: var(--c); background: color-mix(in srgb, var(--c) 12%, transparent); }
+  .impact { font-size: 0.8rem; color: #b07d00; }
+  .impact.fort { color: #c2410c; font-weight: 600; }
+  .impact span { color: var(--muted); font-weight: 500; }
+  h3 { margin: 0.45rem 0 0.35rem; font-size: 1.2rem; }
+  .post > a:hover h3 { color: var(--accent); }
+  .sum { margin: 0 0 0.4rem; color: var(--text); }
+  .src { margin: 0; font-size: 0.88rem; color: var(--muted); }
+  .disclaimer { margin-top: 3rem; padding-top: 1rem; border-top: 1px solid var(--line); max-width: 75ch; }
 </style>
+
+<script>
+  const root = document.getElementById('feed')!;
+  const search = root.querySelector<HTMLInputElement>('.search')!;
+  const posts = [...root.querySelectorAll<HTMLElement>('.post')];
+  const months = [...root.querySelectorAll<HTMLElement>('.month')];
+  const empty = root.querySelector<HTMLElement>('.empty')!;
+  const state: Record<string, string> = { loc: '', impact: '' };
+  const params = new URLSearchParams(location.search);
+  state.loc = params.get('loc') || '';
+  state.impact = params.get('impact') || '';
+  const norm = (s: string) => s.normalize('NFD').replace(/\p{Diacritic}/gu, '').toLowerCase();
+
+  function apply() {
+    const q = norm(search.value.trim());
+    let n = 0;
+    posts.forEach((p) => {
+      const ok =
+        (!state.loc || p.dataset.loc === state.loc) &&
+        (!state.impact || p.dataset.impact === state.impact) &&
+        (!q || q.split(/\s+/).every((w) => norm(p.dataset.text || '').includes(w)));
+      p.hidden = !ok;
+      if (ok) n++;
+    });
+    months.forEach((m) => (m.hidden = ![...m.querySelectorAll<HTMLElement>('.post')].some((p) => !p.hidden)));
+    empty.hidden = n > 0;
+    root.querySelectorAll<HTMLElement>('[data-group]').forEach((g) =>
+      g.querySelectorAll<HTMLButtonElement>('.btn').forEach((b) => b.setAttribute('aria-pressed', String((b.dataset.v || '') === state[g.dataset.group!]))),
+    );
+  }
+  root.querySelectorAll<HTMLElement>('[data-group]').forEach((g) =>
+    g.querySelectorAll<HTMLButtonElement>('.btn').forEach((b) =>
+      b.addEventListener('click', () => {
+        state[g.dataset.group!] = b.dataset.v || '';
+        const url = new URL(location.href);
+        state[g.dataset.group!] ? url.searchParams.set(g.dataset.group!, state[g.dataset.group!]) : url.searchParams.delete(g.dataset.group!);
+        history.replaceState(null, '', url);
+        apply();
+      }),
+    ),
+  );
+  search.addEventListener('input', apply);
+  apply();
+</script>
