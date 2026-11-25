@@ -3,11 +3,13 @@ import Base from '../../../layouts/Base.astro';
 import FilterableList from '../../../components/FilterableList.astro';
 import { useT, langFromParam, langPaths } from '../../../i18n';
 import { getTravaux } from '../../../lib';
+import { SITE } from '../../../site.config';
 
 export const getStaticPaths = langPaths;
 const lang = langFromParam(Astro.params.lang);
 const t = useT(lang);
-const items = await getTravaux(['poster', 'oral', 'resume']);
+const types = (['poster', 'oral', 'resume'] as const).filter((ty) => !SITE.hiddenTypes.includes(ty));
+const items = await getTravaux([...types]);
 ---
 
 <Base lang={lang} title={t('nav.congres')}>
@@ -16,6 +18,6 @@ const items = await getTravaux(['poster', 'oral', 'resume']);
       <h1>{t('nav.congres')}</h1>
       <p>{t('congres.intro')}</p>
     </header>
-    <FilterableList items={items} lang={lang} types={['poster', 'oral', 'resume']} />
+    <FilterableList items={items} lang={lang} types={[...types]} />
   </div>
 </Base>

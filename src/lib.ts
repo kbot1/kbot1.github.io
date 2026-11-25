@@ -1,10 +1,12 @@
 import { getCollection, type CollectionEntry } from 'astro:content';
+import { SITE } from './site.config';
 
 export type Travail = CollectionEntry<'travaux'>;
 
 export async function getTravaux(types?: Travail['data']['type'][]) {
   const all = await getCollection('travaux');
   return all
+    .filter((e) => !SITE.hiddenTypes.includes(e.data.type))
     .filter((e) => !types || types.includes(e.data.type))
     .sort((a, b) => b.data.date.getTime() - a.data.date.getTime());
 }

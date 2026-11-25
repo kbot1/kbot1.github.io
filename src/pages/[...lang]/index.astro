@@ -14,12 +14,13 @@ const t = useT(lang);
 const travaux = await getTravaux();
 const articles = travaux.filter((x) => x.data.type === 'article');
 const congres = travaux.filter((x) => x.data.type !== 'article');
-const stats = [
+const statsAll = [
   { n: articles.length, label: t('stats.articles'), path: '/publications/' },
   { n: travaux.filter((x) => x.data.type === 'poster').length, label: t('stats.posters'), path: '/congres/?type=poster' },
   { n: travaux.filter((x) => x.data.type === 'oral').length, label: t('stats.orals'), path: '/congres/?type=oral' },
   { n: travaux.filter((x) => x.data.type === 'resume').length, label: t('stats.resumes'), path: '/congres/?type=resume' },
 ];
+const stats = statsAll.filter((s) => !SITE.hiddenTypes.some((h) => s.path.includes(`type=${h}`)));
 const cartes = (await getCollection('cartes')).sort((a, b) => Number(b.data.featured) - Number(a.data.featured));
 const featured = cartes[0];
 const posts = (await getPosts()).slice(0, 3);
@@ -135,7 +136,7 @@ const posts = (await getPosts()).slice(0, 3);
     .portrait { width: 104px; height: 104px; font-size: 2.1rem; }
   }
 
-  .stats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 1rem; margin: 2.25rem 0 0.5rem; }
+  .stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 1rem; margin: 2.25rem 0 0.5rem; }
   .stat {
     display: flex; flex-direction: column; padding: 1rem 1.2rem; border: 1px solid var(--line); border-radius: var(--radius);
     text-decoration: none; color: var(--muted); background: var(--bg-card); transition: border-color 0.15s;
