@@ -3,7 +3,7 @@ export type Lang = (typeof LANGS)[number];
 
 export const ui = {
   fr: {
-    'nav.veille': 'Veille 2026',
+    'nav.veille': 'Veille bibliographique',
     'nav.apropos': 'À propos',
     'nav.revues': 'Revues',
     'revues.title': 'Revues de la littérature',
@@ -86,7 +86,7 @@ export const ui = {
     'footer': 'Site construit avec Astro et hébergé sur GitHub Pages.',
   },
   en: {
-    'nav.veille': '2026 Watch',
+    'nav.veille': 'Literature watch',
     'nav.apropos': 'About',
     'nav.revues': 'Reviews',
     'revues.title': 'Literature reviews',

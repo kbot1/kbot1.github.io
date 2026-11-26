@@ -8,7 +8,7 @@ export async function veilleRss(context: APIContext, lang: 'fr' | 'en') {
   const items = await getVeille(lang);
   const prefix = lang === 'fr' ? '' : '/en';
   return rss({
-    title: `${SITE.name} — ${ui[lang]['veille.title']}`,
+    title: `${SITE.title[lang]} — ${ui[lang]['veille.title']}`,
     description: ui[lang]['veille.lead'],
     site: context.site!,
     items: items.map(({ entry, slug }) => ({

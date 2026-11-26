@@ -11,7 +11,7 @@ interface Props {
 }
 const { lang, title, description, image } = Astro.props;
 const t = useT(lang);
-const fullTitle = title ? `${title} · ${SITE.name}` : `${SITE.name} — ${SITE.role[lang]}`;
+const fullTitle = title ? `${title} · ${SITE.title[lang]}` : `${SITE.title[lang]} — ${SITE.role[lang]}`;
 const desc = description ?? SITE.bio[lang];
 const basePath = stripLang(Astro.url.pathname);
 const altLang: Lang = lang === 'fr' ? 'en' : 'fr';
@@ -43,7 +43,7 @@ function isActive(p: string) {
     <link rel="alternate" hreflang="fr" href={new URL(href('fr', basePath), Astro.site)} />
     <link rel="alternate" hreflang="en" href={new URL(href('en', basePath), Astro.site)} />
     <link rel="sitemap" href="/sitemap-index.xml" />
-    <link rel="alternate" type="application/rss+xml" title={`${SITE.name} — ${t('veille.title')}`} href={href(lang, '/rss.xml')} />
+    <link rel="alternate" type="application/rss+xml" title={`${SITE.title[lang]} — ${t('veille.title')}`} href={href(lang, '/rss.xml')} />
     <meta property="og:title" content={fullTitle} />
     <meta property="og:description" content={desc} />
     <meta property="og:type" content="website" />
@@ -62,7 +62,7 @@ function isActive(p: string) {
       <div class="container bar">
         <a class="brand" href={href(lang, '/')}>
           {SITE.portraitMini ? <img class="mono photo" src={SITE.portraitMini} alt="" width="34" height="34" /> : <span class="mono">{SITE.initials}</span>}
-          <span class="brand-name">{SITE.name}</span>
+          <span class="brand-name">{SITE.title[lang]}</span>
         </a>
         <button class="icon-btn menu-btn" aria-label={t('menu')} aria-expanded="false" aria-controls="nav">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 7h16M4 12h16M4 17h16" /></svg>
