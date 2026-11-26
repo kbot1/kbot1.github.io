@@ -57,3 +57,11 @@ export async function getVeille(lang: 'fr' | 'en') {
     .map((e) => ({ entry: e, slug: e.id.replace(/^(fr|en)\//, '') }))
     .sort((a, b) => b.entry.data.date.getTime() - a.entry.data.date.getTime());
 }
+
+export type Revue = CollectionEntry<'revues'>;
+
+/** Revues publiées, de la plus récente à la plus ancienne (puis dans l'ordre de la série). */
+export async function getRevues() {
+  const all = await getCollection('revues', (e) => !e.data.draft);
+  return all.sort((a, b) => b.data.date.getTime() - a.data.date.getTime() || a.data.ordre - b.data.ordre);
+}
