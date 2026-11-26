@@ -1,0 +1,70 @@
+---
+import { render, type CollectionEntry } from 'astro:content';
+import Base from '../../../layouts/Base.astro';
+import { useT, href, fmtDate, langFromParam } from '../../../i18n';
+import { getRevues } from '../../../lib';
+
+export async function getStaticPaths() {
+  const revues = await getRevues();
+  return [undefined, 'en'].flatMap((lang) =>
+    revues.map((r) => ({
+      params: { lang, slug: r.id },
+      props: {
+        revue: r,
+        // autres revues de la même série, dans l'ordre de lecture
+        serie: r.data.serie
+          ? revues
+              .filter((x) => x.data.serie === r.data.serie)
+              .sort((a, b) => a.data.ordre - b.data.ordre)
+              .map((x) => ({ id: x.id, title: x.data.title }))
+          : [],
+      },
+    })),
+  );
+}
+
+const { revue, serie } = Astro.props as { revue: CollectionEntry<'revues'>; serie: { id: string; title: string }[] };
+const lang = langFromParam(Astro.params.lang);
+const t = useT(lang);
+const d = revue.data;
+const { Content } = await render(revue);
+---
+
+<Base lang={lang} title={d.title} description={d.summary}>
+  <article class="container">
+    <header class="page-head">
+      <a class="small" href={href(lang, '/revues/')} style="text-decoration:none">← {t('nav.revues')}</a>
+      <p class="small muted" style="margin-top:1rem">
+        <time datetime={d.date.toISOString().slice(0, 10)}>{fmtDate(d.date, lang)}</time>
+        {d.serie && <> · {d.serie}</>}
+      </p>
+      <h1>{d.title}</h1>
+      {lang === 'en' && <p class="small muted">{t('revues.frOnly')}</p>}
+    </header>
+
+    <div class="prose" lang="fr">
+      <Content />
+    </div>
+
+    {
+      serie.length > 1 && (
+        <nav class="serie card">
+          <p class="small muted">{t('revues.serie')}{d.serie ? ` : ${d.serie}` : ''}</p>
+          <ol>
+            {serie.map((s) => (
+              <li>{s.id === revue.id ? <strong>{s.title}</strong> : <a href={href(lang, `/revues/${s.id}/`)}>{s.title}</a>}</li>
+            ))}
+          </ol>
+        </nav>
+      )
+    }
+    <p class="small muted disclaimer">{t('veille.disclaimer')}</p>
+  </article>
+</Base>
+
+<style>
+  .serie { max-width: 70ch; margin-top: 2.5rem; padding: 1rem 1.25rem; }
+  .serie ol { margin: 0.4rem 0 0; padding-left: 1.2rem; }
+  .serie li { margin: 0.3rem 0; }
+  .disclaimer { max-width: 70ch; margin-top: 2rem; }
+</style>

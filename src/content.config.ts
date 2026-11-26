@@ -103,4 +103,23 @@ const veille = defineCollection({
   }),
 });
 
-export const collections = { travaux, blog, cartes, galerie, veille };
+/**
+ * REVUES : revues de la littérature thématiques, en français.
+ * Un fichier Markdown par revue dans src/content/revues/.
+ * `serie` regroupe plusieurs revues d'un même dossier ; `ordre` fixe leur ordre dans la série.
+ */
+const revues = defineCollection({
+  loader: glob({ pattern: '**/*.md', base: './src/content/revues' }),
+  schema: z.object({
+    title: z.string(),
+    date: z.coerce.date(),
+    summary: z.string(),
+    serie: z.string().optional(),
+    ordre: z.number().default(0),
+    localisation: z.enum(['orl', 'sein', 'gyn']).optional(),
+    tags: z.array(z.string()).default([]),
+    draft: z.boolean().default(false),
+  }),
+});
+
+export const collections = { travaux, blog, cartes, galerie, veille, revues };

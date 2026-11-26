@@ -1,0 +1,43 @@
+---
+import Base from '../../../layouts/Base.astro';
+import { useT, href, fmtDate, langFromParam, langPaths } from '../../../i18n';
+import { getRevues } from '../../../lib';
+
+export const getStaticPaths = langPaths;
+const lang = langFromParam(Astro.params.lang);
+const t = useT(lang);
+const revues = await getRevues();
+---
+
+<Base lang={lang} title={t('revues.title')} description={t('revues.lead')}>
+  <div class="container">
+    <header class="page-head">
+      <h1>{t('revues.title')}</h1>
+      <p>{t('revues.lead')}</p>
+      {lang === 'en' && <p class="small muted">{t('revues.frOnly')}</p>}
+    </header>
+    <div class="posts">
+      {
+        revues.map((r) => (
+          <a class="post" href={href(lang, `/revues/${r.id}/`)}>
+            <span class="muted small">
+              <time datetime={r.data.date.toISOString().slice(0, 10)}>{fmtDate(r.data.date, lang)}</time>
+              {r.data.serie && <> · {r.data.serie}</>}
+            </span>
+            <h2>{r.data.title}</h2>
+            <p class="muted">{r.data.summary}</p>
+            {r.data.tags.length > 0 && <span class="small muted">{r.data.tags.map((x) => `#${x}`).join('  ')}</span>}
+          </a>
+        ))
+      }
+    </div>
+  </div>
+</Base>
+
+<style>
+  .posts { display: grid; gap: 0.5rem; max-width: 820px; }
+  .post { display: block; padding: 1.25rem 0; border-bottom: 1px solid var(--line); text-decoration: none; color: inherit; }
+  .post h2 { font-size: 1.3rem; margin: 0.3rem 0; }
+  .post:hover h2 { color: var(--accent); }
+  .post p { margin: 0 0 0.3rem; }
+</style>

@@ -11,6 +11,7 @@ Sur github.com, ouvrez le dossier voulu, cliquez sur **Add file → Create new f
 | Je veux ajouter… | Où | Comment |
 |---|---|---|
 | Un **billet de veille** (page d'accueil) | `src/content/veille/fr/` et `src/content/veille/en/` | Copier un billet existant, **même nom de fichier** dans les deux dossiers. Champs : `localisation` (orl, sein, gyn), `impact` (fort, modere), `date` = date de publication de l'article |
+| Une **revue de la littérature** (rubrique Revues) | `src/content/revues/` | Copier une revue existante. Champs : `title`, `date`, `summary`, `serie` (facultatif, regroupe plusieurs revues), `ordre` (position dans la série) |
 | Mes infos (bio, liens ORCID, PubMed, e-mail, photo) | `src/site.config.ts` | Modifier les champs |
 | Un **article** | `src/content/travaux/` | Copier `2025-exemple-article.md`, `type: article` |
 | Un **poster** | `src/content/travaux/` + image dans `public/posters/` | `type: poster`, `poster: /posters/mon-poster.jpg` |

@@ -5,6 +5,11 @@ export const ui = {
   fr: {
     'nav.veille': 'Veille 2026',
     'nav.apropos': 'À propos',
+    'nav.revues': 'Revues',
+    'revues.title': 'Revues de la littérature',
+    'revues.lead': 'Synthèses thématiques des données publiées, avec leur niveau de preuve et les références en fin d’article.',
+    'revues.serie': 'Dans la même série',
+    'revues.frOnly': 'Article disponible en français uniquement.',
     'veille.title': 'Veille en radiothérapie',
     'veille.lead': 'Les publications de 2026 qui ont fait évoluer, un peu ou beaucoup, la prise en charge en radiothérapie des cancers ORL, du sein et gynécologiques. Un billet par article, à sa date de publication.',
     'veille.disclaimer': 'Synthèses rédigées par l’auteur du site à partir des articles publiés. Elles ne remplacent ni la lecture des articles originaux ni les recommandations des sociétés savantes.',
@@ -83,6 +88,11 @@ export const ui = {
   en: {
     'nav.veille': '2026 Watch',
     'nav.apropos': 'About',
+    'nav.revues': 'Reviews',
+    'revues.title': 'Literature reviews',
+    'revues.lead': 'Thematic summaries of the published evidence, with its level of proof and references at the end of each article.',
+    'revues.serie': 'In this series',
+    'revues.frOnly': 'This article is available in French only.',
     'veille.title': 'Radiation oncology watch',
     'veille.lead': 'The 2026 publications that changed, slightly or substantially, radiotherapy practice in head and neck, breast and gynaecological cancers. One post per article, dated by its publication.',
     'veille.disclaimer': 'Summaries written by the site author from the published articles. They do not replace reading the original papers or society guidelines.',
