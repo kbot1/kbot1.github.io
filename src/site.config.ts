@@ -7,6 +7,11 @@ export const SITE = {
   // Retirez 'oral' de la liste pour réafficher les communications orales.
   hiddenTypes: ['oral'] as string[],
   name: 'Kevin Berthelot',
+  // Titre affiché dans l'en-tête et l'onglet du navigateur.
+  title: {
+    fr: 'Le billet du Dr Kevin Berthelot',
+    en: 'Dr Kevin Berthelot’s column',
+  },
   initials: 'KB',
   // Photo de profil : déposez un fichier dans /public (ex. /portrait.jpg)
   // et indiquez son chemin ici. Laissez vide pour afficher les initiales.
