@@ -1,0 +1,466 @@
+---
+import Base from '../../../layouts/Base.astro';
+import { href, langFromParam, langPaths } from '../../../i18n';
+import { getKnowledgeGraph, getFiches } from '../../../lib-connaissances';
+
+export const getStaticPaths = langPaths;
+const lang = langFromParam(Astro.params.lang);
+const en = lang === 'en';
+const graph = await getKnowledgeGraph();
+const fiches = await getFiches();
+
+const count = (t: string) => graph.nodes.filter((n) => n.type === t).length;
+const toReview = graph.nodes.filter((n) => n.review_status === 'proposed').length + graph.edges.filter((e) => e.review_status === 'proposed').length;
+const fichePaths = Object.fromEntries(fiches.map((f) => [`fiche-${f.id}`, href(lang, `/connaissances/fiches/${f.id}/`)]));
+
+const L = {
+  title: en ? 'Knowledge map' : 'Carte de connaissances',
+  lead: en
+    ? 'Sources, reading notes, ideas and open questions, linked by explicit, justified relations. Content in French.'
+    : 'Sources, fiches de lecture, idées et questions ouvertes, reliées par des relations explicites et justifiées. Une proximité dans la carte ne signifie ni consensus ni causalité.',
+};
+---
+
+<Base lang={lang} title={L.title} description={L.lead}>
+  <div class="container kg-page">
+    <header class="page-head">
+      <h1>{L.title}</h1>
+      <p>{L.lead}</p>
+      <p class="small muted stats">
+        {count('source')} sources · {count('fiche_source')} fiche{count('fiche_source') > 1 ? 's' : ''} de lecture · {count('idee') + count('hypothese')} idées · {count('question')} questions · {graph.edges.length} liens ·
+        <span class="to-review">{toReview} éléments proposés, à valider</span>
+      </p>
+    </header>
+
+    <div class="kg-toolbar" role="search">
+      <input id="kg-search" type="search" placeholder="Rechercher un titre, un essai, un mot-clé…" aria-label="Rechercher dans la carte" />
+      <select id="kg-group" aria-label="Groupe thématique">
+        <option value="">Vue d’ensemble (tous les groupes)</option>
+        {[...graph.groups].sort((a, b) => a.label.localeCompare(b.label, 'fr')).map((g) => <option value={g.id}>{g.label} ({g.member_ids.length})</option>)}
+      </select>
+      <select id="kg-review" aria-label="Statut de revue">
+        <option value="">Tous les statuts</option>
+        <option value="proposed">Proposés (à valider)</option>
+        <option value="accepted">Acceptés</option>
+        <option value="rejected">Refusés</option>
+      </select>
+      <fieldset class="kg-types">
+        <legend class="sr-only">Types affichés</legend>
+        <label><input type="checkbox" value="idee" checked /> Idées</label>
+        <label><input type="checkbox" value="hypothese" checked /> Hypothèses</label>
+        <label><input type="checkbox" value="question" checked /> Questions</label>
+        <label><input type="checkbox" value="fiche_source" checked /> Fiches</label>
+        <label><input type="checkbox" value="source" checked /> Sources</label>
+      </fieldset>
+      <label class="kg-all"><input id="kg-allsrc" type="checkbox" /> Tous les résumés</label>
+      <button class="btn" id="kg-fit" type="button">Recentrer</button>
+    </div>
+
+    <div class="kg-main">
+      <div class="kg-canvas-wrap">
+        <div id="kg-canvas" aria-label="Carte interactive ; une liste équivalente figure sous la carte."></div>
+        <p id="kg-note" class="kg-note small" hidden></p>
+      </div>
+      <aside id="kg-panel" class="kg-panel" aria-live="polite">
+        <p class="muted small">Cliquez sur un nœud ou un lien pour afficher son contenu, sa provenance et ses relations. Cliquez sur un groupe pour le déplier.</p>
+      </aside>
+    </div>
+
+    <div class="kg-legend small muted">
+      <span><i class="lg lg-idee"></i>Idée</span>
+      <span><i class="lg lg-hyp"></i>Hypothèse (libellé « H »)</span>
+      <span><i class="lg lg-question"></i>Question</span>
+      <span><i class="lg lg-fiche"></i>Fiche de lecture</span>
+      <span><i class="lg lg-source"></i>Source</span>
+      <span><i class="lg lg-group"></i>Groupe (taille = nombre de membres)</span>
+      <span><i class="ln ln-solid"></i>Lien explicite ou inféré</span>
+      <span><i class="ln ln-dash"></i>Lien exploratoire (« expl. »)</span>
+      <span>Bordure pointillée : proposé, non encore validé</span>
+    </div>
+
+    <section class="kg-list">
+      <h2>Liste des contenus</h2>
+      <p class="muted small">Équivalent textuel de la carte, filtré par la recherche et les options ci-dessus.</p>
+      <div id="kg-listbody"></div>
+    </section>
+
+    <section class="kg-fiches">
+      <h2>Fiches de lecture</h2>
+      {
+        fiches.length === 0 ? (
+          <p class="muted">
+            Aucune fiche publiée pour l’instant. Chaque nouvelle fiche ajoutée dans <code>src/content/connaissances/fiches/</code> apparaîtra ici et dans la carte, reliée à ses idées.
+          </p>
+        ) : (
+          <ul>
+            {fiches.map((f) => (
+              <li>
+                <a href={href(lang, `/connaissances/fiches/${f.id}/`)}>{f.data.titre}</a>
+                <span class="muted small"> · {f.data.statut}</span>
+              </li>
+            ))}
+          </ul>
+        )
+      }
+    </section>
+  </div>
+
+  <script type="application/json" id="kg-data" set:html={JSON.stringify({ graph, fichePaths }).replace(/</g, '\\u003c')} />
+</Base>
+
+<style>
+  .kg-page { max-width: 1280px; }
+  .stats { margin-top: 0.5rem; }
+  .to-review { color: var(--c-poster); font-weight: 600; }
+  .kg-toolbar { display: flex; flex-wrap: wrap; gap: 0.5rem; align-items: center; margin: 1rem 0; }
+  .kg-toolbar input[type='search'] { flex: 1 1 240px; }
+  .kg-toolbar input[type='search'], .kg-toolbar select {
+    padding: 0.45rem 0.6rem; border: 1px solid var(--line); border-radius: 8px; background: var(--bg-card); color: var(--text); font: inherit; font-size: 0.9rem;
+  }
+  .kg-types { border: 0; padding: 0; margin: 0; display: flex; gap: 0.6rem; flex-wrap: wrap; font-size: 0.88rem; }
+  .kg-all { font-size: 0.88rem; }
+  .sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); }
+  .kg-main { display: grid; grid-template-columns: minmax(0, 1fr) 360px; gap: 1rem; }
+  .kg-canvas-wrap { position: relative; }
+  #kg-canvas {
+    height: 72vh; min-height: 480px; border: 1px solid var(--line); border-radius: var(--radius);
+    background: radial-gradient(circle at 1px 1px, color-mix(in srgb, var(--muted) 20%, transparent) 1px, transparent 0) 0 0 / 22px 22px, var(--bg-card);
+  }
+  .kg-note { position: absolute; left: 0.75rem; bottom: 0.75rem; margin: 0; background: var(--bg-card); border: 1px solid var(--line); padding: 0.4rem 0.6rem; border-radius: 8px; max-width: 70%; }
+  .kg-panel { border: 1px solid var(--line); border-radius: var(--radius); padding: 1rem; background: var(--bg-card); max-height: 72vh; overflow: auto; font-size: 0.92rem; }
+  .kg-panel :global(h3) { margin: 0.2rem 0 0.5rem; font-size: 1.08rem; line-height: 1.35; }
+  .kg-panel :global(h4) { margin: 1rem 0 0.35rem; font-size: 0.82rem; text-transform: uppercase; letter-spacing: 0.04em; color: var(--muted); }
+  .kg-panel :global(ul) { padding-left: 1.1rem; margin: 0.2rem 0; }
+  .kg-panel :global(li) { margin: 0.25rem 0; }
+  .kg-panel :global(.chips) { display: flex; flex-wrap: wrap; gap: 0.3rem; }
+  .kg-panel :global(.chip) { font-size: 0.72rem; padding: 0.1rem 0.45rem; border-radius: 99px; background: var(--bg-soft); border: 1px solid var(--line); }
+  .kg-panel :global(.chip.warn) { border-color: var(--c-poster); color: var(--c-poster); }
+  .kg-panel :global(button.link) { background: none; border: 0; padding: 0; color: var(--accent); cursor: pointer; font: inherit; text-align: left; text-decoration: underline; text-underline-offset: 2px; }
+  .kg-panel :global(.rel) { color: var(--muted); font-size: 0.82rem; }
+  .kg-legend { display: flex; flex-wrap: wrap; gap: 0.5rem 1.1rem; margin: 0.75rem 0 2rem; align-items: center; }
+  .kg-legend span { display: inline-flex; align-items: center; gap: 0.35rem; }
+  .lg { display: inline-block; width: 13px; height: 13px; border-radius: 50%; }
+  .lg-idee { background: var(--accent); }
+  .lg-hyp { background: transparent; border: 2px dashed var(--c-resume); transform: rotate(45deg); border-radius: 2px; }
+  .lg-question { background: var(--c-poster); border-radius: 3px; }
+  .lg-fiche { background: var(--c-oral); border-radius: 2px; }
+  .lg-source { background: var(--muted); opacity: 0.55; border-radius: 2px; }
+  .lg-group { background: var(--accent-soft); border: 1px solid var(--accent); width: 18px; height: 18px; }
+  .ln { display: inline-block; width: 22px; border-top: 2px solid var(--muted); }
+  .ln-dash { border-top-style: dashed; }
+  .kg-list :global(details) { border-bottom: 1px solid var(--line); padding: 0.4rem 0; }
+  .kg-list :global(summary) { cursor: pointer; font-weight: 600; }
+  .kg-list :global(ul) { margin: 0.4rem 0 0.6rem; }
+  .kg-list :global(li) { margin: 0.2rem 0; }
+  .kg-fiches { margin-top: 2.5rem; }
+  @media (max-width: 900px) {
+    .kg-main { grid-template-columns: 1fr; }
+    #kg-canvas { height: 60vh; }
+    .kg-panel { max-height: none; }
+  }
+</style>
+
+<script>
+  import cytoscape from 'cytoscape';
+
+  type Prov = { document_id: string; locator: string | null; excerpt: string | null };
+  type N = { id: string; type: string; title: string; text: string; origin: string; review_status: string; epistemic_status: string; provenance: Prov[]; limits: string[]; tags: string[]; group_ids: string[]; metadata: Record<string, any> };
+  type E = { id: string; source: string; target: string; relation: string; rationale: string; provenance: Prov[]; review_status: string; evidence_basis: string };
+  type G = { id: string; label: string; description: string; member_ids: string[]; review_status: string };
+
+  const raw = JSON.parse(document.getElementById('kg-data')!.textContent!);
+  const { nodes, edges, groups } = raw.graph as { nodes: N[]; edges: E[]; groups: G[] };
+  const fichePaths: Record<string, string> = raw.fichePaths;
+  const byId = new Map(nodes.map((n) => [n.id, n]));
+  const groupById = new Map(groups.map((g) => [g.id, g]));
+
+  const TYPE_LABEL: Record<string, string> = { source: 'Source', fiche_source: 'Fiche de lecture', idee: 'Idée', hypothese: 'Hypothèse', question: 'Question', projet: 'Projet', competence: 'Compétence', prompt: 'Prompt', livrable: 'Livrable', retour: 'Retour' };
+  const REL_LABEL: Record<string, string> = { documente: 'documente', extrait_de: 'extrait de', soutient: 'soutient', contredit: 'contredit', nuance: 'nuance', precise: 'précise', analogue_a: 'analogue à', interroge: 'interroge', mobilise: 'mobilise', utilise: 'utilise', produit_dans: 'produit dans', evalue: 'évalue', ameliore: 'améliore' };
+  const REVIEW_LABEL: Record<string, string> = { proposed: 'proposé', accepted: 'accepté', rejected: 'refusé' };
+  const EPI_LABEL: Record<string, string> = { reported: 'résultat rapporté', hypothesis: 'hypothèse', disputed: 'discuté', not_applicable: '' };
+  const ORIGIN_LABEL: Record<string, string> = { source_reported: 'rapporté par la source', author_interpretation: 'interprétation des auteurs', user_interpretation: 'mon interprétation', ai_inference: 'inférence de l’IA', not_applicable: '' };
+  const BASIS_LABEL: Record<string, string> = { explicit: 'explicite', inferred: 'inféré', exploratory: 'exploratoire' };
+  const MAX_NODES = 220;
+
+  const $ = <T extends HTMLElement>(id: string) => document.getElementById(id) as T;
+  const search = $<HTMLInputElement>('kg-search');
+  const groupSel = $<HTMLSelectElement>('kg-group');
+  const reviewSel = $<HTMLSelectElement>('kg-review');
+  const allSrc = $<HTMLInputElement>('kg-allsrc');
+  const panel = $('kg-panel');
+  const note = $('kg-note');
+  const listBody = $('kg-listbody');
+  const typeBoxes = [...document.querySelectorAll<HTMLInputElement>('.kg-types input')];
+
+  const esc = (s: unknown) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]!);
+  const norm = (s: string) => s.normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase();
+  const css = (v: string) => getComputedStyle(document.documentElement).getPropertyValue(v).trim() || '#888';
+
+  function matches(n: N, q: string) {
+    if (!q) return true;
+    const hay = norm([n.title, n.text, n.tags.join(' '), n.metadata?.study_id ?? '', ...n.limits].join(' '));
+    return norm(q).split(/\s+/).every((w) => hay.includes(w));
+  }
+
+  /** Sélection des nœuds visibles selon les filtres. */
+  function visibleSet() {
+    const q = search.value.trim();
+    const gid = groupSel.value;
+    const review = reviewSel.value;
+    const types = new Set(typeBoxes.filter((b) => b.checked).map((b) => b.value));
+    const ok = (n: N) => types.has(n.type) && (!review || n.review_status === review);
+    let ids: Set<string>;
+    if (gid) {
+      ids = new Set(groupById.get(gid)!.member_ids.filter((id) => byId.has(id)));
+      // questions et idées reliées aux membres du groupe
+      for (const e of edges) if (ids.has(e.target) && byId.get(e.source)?.type === 'question') ids.add(e.source);
+    } else if (allSrc.checked || q) {
+      ids = new Set(nodes.map((n) => n.id));
+    } else {
+      // vue d'ensemble : idées, questions et fiches, rattachées à leurs groupes ;
+      // les sources apparaissent quand on déplie un groupe ou sélectionne une idée
+      ids = new Set(nodes.filter((n) => n.type !== 'source').map((n) => n.id));
+    }
+    let list = [...ids].map((id) => byId.get(id)!).filter((n) => n && ok(n) && matches(n, q));
+    if (q) {
+      // garder aussi les voisins directs des résultats de recherche
+      const keep = new Set(list.map((n) => n.id));
+      const hit = new Set(keep);
+      for (const e of edges) {
+        if (hit.has(e.source)) keep.add(e.target);
+        if (hit.has(e.target)) keep.add(e.source);
+      }
+      list = [...keep].map((id) => byId.get(id)!).filter((n) => n && ok(n));
+    }
+    let truncated = 0;
+    if (list.length > MAX_NODES) {
+      const rank = (n: N) => (n.type === 'source' ? 1 : 0);
+      list.sort((a, b) => rank(a) - rank(b));
+      truncated = list.length - MAX_NODES;
+      list = list.slice(0, MAX_NODES);
+    }
+    return { list, truncated, overview: !gid && !q && !allSrc.checked };
+  }
+
+  const cy = cytoscape({
+    container: $('kg-canvas'),
+    wheelSensitivity: 0.25,
+    minZoom: 0.15,
+    maxZoom: 3,
+    style: [],
+  });
+
+  function applyStyle() {
+    const accent = css('--accent'), text = css('--text'), muted = css('--muted'), line = css('--line');
+    const card = css('--bg-card'), soft = css('--accent-soft'), q = css('--c-poster'), fiche = css('--c-oral'), hyp = css('--c-resume');
+    cy.style([
+      { selector: 'node', style: { label: 'data(short)', 'min-zoomed-font-size': 8, 'font-size': 9, color: text, 'text-wrap': 'wrap', 'text-max-width': '130px', 'text-valign': 'bottom', 'text-margin-y': 4, 'font-family': 'Inter Variable, system-ui, sans-serif', width: 16, height: 16, 'background-color': accent, 'border-width': 2, 'border-color': card } },
+      { selector: 'node[type="source"]', style: { shape: 'round-rectangle', width: 10, height: 10, 'background-color': muted, 'background-opacity': 0.55, 'font-size': 7, color: muted } },
+      { selector: 'node[type="fiche_source"]', style: { shape: 'round-rectangle', 'background-color': fiche, width: 16, height: 16 } },
+      { selector: 'node[type="question"]', style: { shape: 'round-tag', 'background-color': q, width: 18, height: 18 } },
+      { selector: 'node[type="hypothese"]', style: { shape: 'diamond', 'background-color': card, 'border-color': hyp, 'border-style': 'dashed', 'border-width': 2, label: 'data(hlabel)' } },
+      { selector: 'node[review="proposed"]', style: { 'border-style': 'dotted', 'border-color': muted, 'border-width': 1.5 } },
+      { selector: 'node[review="rejected"]', style: { opacity: 0.35 } },
+      { selector: 'node[type="groupe"]', style: { shape: 'ellipse', 'background-color': soft, 'border-color': accent, 'border-width': 1.5, 'border-style': 'solid', width: 'data(size)', height: 'data(size)', label: 'data(label)', 'min-zoomed-font-size': 0, 'text-valign': 'center', 'text-margin-y': 0, 'font-size': 11, 'font-weight': 600, color: accent, 'text-max-width': '110px' } },
+      { selector: 'edge', style: { width: 1.2, 'line-color': line, 'target-arrow-color': line, 'target-arrow-shape': 'triangle', 'arrow-scale': 0.7, 'curve-style': 'bezier' } },
+      { selector: 'edge[rel!="extrait_de"][rel!="documente"][rel!="membre"]', style: { label: 'data(label)', 'font-size': 7, color: muted, 'text-background-color': card, 'text-background-opacity': 1, 'text-background-padding': '1px', width: 1.6, 'line-color': muted, 'target-arrow-color': muted } },
+      { selector: 'edge[basis="exploratory"]', style: { 'line-style': 'dashed' } },
+      { selector: 'edge[rel="analogue_a"]', style: { 'target-arrow-shape': 'none' } },
+      { selector: 'edge[rel="membre"]', style: { 'line-color': muted, opacity: 0.35, width: 1, 'target-arrow-shape': 'none', 'line-style': 'dotted' } },
+      { selector: '.faded', style: { opacity: 0.15 } },
+      { selector: 'node:selected', style: { 'border-color': accent, 'border-width': 3, 'border-style': 'solid' } },
+      { selector: 'edge:selected', style: { 'line-color': accent, 'target-arrow-color': accent, width: 2.5 } },
+    ] as any);
+  }
+
+  function shortLabel(n: N) {
+    const t = n.title.length > 70 ? n.title.slice(0, 67) + '…' : n.title;
+    return n.type === 'source' && n.metadata?.study_id ? String(n.metadata.study_id) : t;
+  }
+
+  function render() {
+    const { list, truncated, overview } = visibleSet();
+    const ids = new Set(list.map((n) => n.id));
+    const els: any[] = list.map((n) => ({
+      group: 'nodes',
+      data: { id: n.id, type: n.type, review: n.review_status, short: shortLabel(n), hlabel: 'H · ' + shortLabel(n) },
+    }));
+    for (const e of edges)
+      if (ids.has(e.source) && ids.has(e.target))
+        els.push({ group: 'edges', data: { id: e.id, source: e.source, target: e.target, rel: e.relation, basis: e.evidence_basis, label: REL_LABEL[e.relation] + (e.evidence_basis === 'exploratory' ? ' (expl.)' : '') } });
+    if (overview) {
+      // nœuds « groupe » cliquables pour déplier un thème
+      for (const g of groups) {
+        const members = g.member_ids.filter((id) => ids.has(id) && byId.get(id)?.type !== 'source');
+        els.push({ group: 'nodes', data: { id: 'grp:' + g.id, type: 'groupe', label: g.label, size: 34 + Math.min(46, Math.sqrt(g.member_ids.length) * 6) } });
+        for (const m of members) els.push({ group: 'edges', data: { id: `m:${g.id}:${m}`, source: 'grp:' + g.id, target: m, rel: 'membre' } });
+      }
+    }
+    cy.elements().remove();
+    cy.add(els);
+    applyStyle();
+    cy.layout({ name: 'cose', animate: false, nodeRepulsion: () => 12000, idealEdgeLength: () => 80, nodeOverlap: 16, gravity: 1.2, componentSpacing: 60, numIter: 1500, randomize: true, padding: 20 } as any).run();
+    cy.fit(undefined, 24);
+    if (cy.zoom() > 1.3) {
+      cy.zoom(1.3);
+      cy.center();
+    }
+    note.hidden = !truncated;
+    note.textContent = truncated ? `${truncated} nœuds masqués pour garder la carte lisible : affinez avec un groupe ou une recherche (la liste ci-dessous reste complète).` : '';
+    renderList();
+    const h = decodeURIComponent(location.hash.replace(/^#n=/, ''));
+    if (h && cy.getElementById(h).nonempty()) selectNode(h, false);
+  }
+
+  function nodeLink(id: string) {
+    const n = byId.get(id);
+    return n ? `<button class="link" data-goto="${esc(id)}">${esc(n.title)}</button>` : esc(id);
+  }
+
+  function showNode(n: N) {
+    const out = edges.filter((e) => e.source === n.id);
+    const inc = edges.filter((e) => e.target === n.id);
+    const chips = [TYPE_LABEL[n.type], REVIEW_LABEL[n.review_status], EPI_LABEL[n.epistemic_status], ORIGIN_LABEL[n.origin]]
+      .filter(Boolean)
+      .map((c, i) => `<span class="chip${i === 1 && n.review_status === 'proposed' ? ' warn' : ''}">${esc(c)}</span>`)
+      .join('');
+    const m = n.metadata || {};
+    const links: string[] = [];
+    if (fichePaths[n.id]) links.push(`<a href="${fichePaths[n.id]}">Ouvrir la fiche complète</a>`);
+    if (m.url) links.push(`<a href="${esc(m.url)}" target="_blank" rel="noopener">Document en ligne</a>`);
+    if (m.doi) links.push(`DOI : <a href="https://doi.org/${esc(m.doi)}" target="_blank" rel="noopener">${esc(m.doi)}</a>`);
+    if (m.pmid) links.push(`PMID : <a href="https://pubmed.ncbi.nlm.nih.gov/${esc(m.pmid)}/" target="_blank" rel="noopener">${esc(m.pmid)}</a>`);
+    if (m.study_id) links.push(`Code du résumé : ${esc(m.study_id)}${m.page ? `, p. ${esc(m.page)} du livre` : ''}`);
+    const relItem = (e: E, other: string, dir: 'out' | 'in') =>
+      `<li><span class="rel">${dir === 'out' ? '→' : '←'} ${esc(REL_LABEL[e.relation])} · ${esc(BASIS_LABEL[e.evidence_basis])}${e.review_status === 'proposed' ? ' · proposé' : ''}</span><br>${nodeLink(other)}<br><button class="link small" data-edge="${esc(e.id)}">justification</button></li>`;
+    panel.innerHTML = `
+      <div class="chips">${chips}</div>
+      <h3>${esc(n.title)}</h3>
+      ${n.text && n.text !== n.title ? `<p>${esc(n.text)}</p>` : ''}
+      ${n.limits.length ? `<h4>Conditions et limites</h4><ul>${n.limits.map((l) => `<li>${esc(l)}</li>`).join('')}</ul>` : ''}
+      ${n.provenance.length ? `<h4>Provenance</h4><ul>${n.provenance.map((p) => `<li>${nodeLink(p.document_id)}${p.locator ? `<br><span class="rel">${esc(p.locator)}</span>` : ''}${p.excerpt ? `<br><q>${esc(p.excerpt)}</q>` : ''}</li>`).join('')}</ul>` : ''}
+      ${links.length ? `<h4>Retrouver le document</h4><ul>${links.map((l) => `<li>${l}</li>`).join('')}</ul>` : ''}
+      ${n.group_ids.length ? `<h4>Groupes</h4><div class="chips">${n.group_ids.map((g) => `<button class="link chip" data-group="${esc(g)}">${esc(groupById.get(g)?.label ?? g)}</button>`).join('')}</div>` : ''}
+      ${out.length + inc.length ? `<h4>Relations (${out.length + inc.length})</h4><ul>${out.map((e) => relItem(e, e.target, 'out')).join('')}${inc.map((e) => relItem(e, e.source, 'in')).join('')}</ul>` : ''}
+      ${n.tags.length ? `<h4>Étiquettes</h4><p class="rel">${n.tags.map((t) => '#' + esc(t)).join(' ')}</p>` : ''}
+    `;
+  }
+
+  function showEdge(e: E) {
+    panel.innerHTML = `
+      <div class="chips"><span class="chip">Relation</span><span class="chip">${esc(BASIS_LABEL[e.evidence_basis])}</span><span class="chip${e.review_status === 'proposed' ? ' warn' : ''}">${esc(REVIEW_LABEL[e.review_status])}</span></div>
+      <h3>${nodeLink(e.source)} <span class="rel">${esc(REL_LABEL[e.relation])}</span> ${nodeLink(e.target)}</h3>
+      <h4>Justification</h4><p>${esc(e.rationale)}</p>
+      ${e.provenance.length ? `<h4>Provenance</h4><ul>${e.provenance.map((p) => `<li>${nodeLink(p.document_id)}${p.locator ? `<br><span class="rel">${esc(p.locator)}</span>` : ''}</li>`).join('')}</ul>` : ''}
+      ${e.evidence_basis === 'exploratory' ? '<p class="small muted">Rapprochement exploratoire : ce n’est ni une preuve ni un lien causal.</p>' : ''}
+    `;
+  }
+
+  function showGroup(g: G) {
+    const ideas = g.member_ids.map((id) => byId.get(id)).filter((n) => n && n.type !== 'source') as N[];
+    const nsrc = g.member_ids.filter((id) => byId.get(id)?.type === 'source').length;
+    panel.innerHTML = `
+      <div class="chips"><span class="chip">Groupe</span><span class="chip">${esc(REVIEW_LABEL[g.review_status])}</span></div>
+      <h3>${esc(g.label)}</h3><p>${esc(g.description)}</p>
+      <p class="rel">${ideas.length} idées ou questions · ${nsrc} sources</p>
+      <p><button class="link" data-group="${esc(g.id)}">Déplier ce groupe dans la carte</button></p>
+      ${ideas.length ? `<ul>${ideas.map((n) => `<li>${nodeLink(n.id)}</li>`).join('')}</ul>` : ''}
+      <p class="small muted">Un groupe est un regroupement visuel, pas une source de preuve.</p>`;
+  }
+
+  function selectNode(id: string, push = true) {
+    const n = byId.get(id);
+    if (!n) return;
+    if (cy.getElementById(id).empty()) {
+      // le nœud est masqué par les filtres : on l'affiche dans son premier groupe
+      search.value = '';
+      groupSel.value = n.group_ids[0] ?? '';
+      typeBoxes.forEach((b) => (b.checked = true));
+      reviewSel.value = '';
+      render();
+    }
+    const el = cy.getElementById(id);
+    cy.elements().unselect();
+    el.select();
+    const hood = el.closedNeighborhood();
+    cy.elements().addClass('faded');
+    hood.removeClass('faded');
+    cy.animate({ center: { eles: el }, zoom: Math.max(cy.zoom(), 1) } as any, { duration: 250 });
+    showNode(n);
+    if (push) history.replaceState(null, '', '#n=' + encodeURIComponent(id));
+  }
+
+  cy.on('tap', 'node', (ev) => {
+    const id = ev.target.id();
+    if (id.startsWith('grp:')) {
+      showGroup(groupById.get(id.slice(4))!);
+      cy.elements().removeClass('faded');
+      return;
+    }
+    selectNode(id);
+  });
+  cy.on('tap', 'edge', (ev) => {
+    const e = edges.find((x) => x.id === ev.target.id());
+    if (e) showEdge(e);
+  });
+  cy.on('tap', (ev) => {
+    if (ev.target === cy) cy.elements().removeClass('faded');
+  });
+
+  panel.addEventListener('click', (ev) => {
+    const t = ev.target as HTMLElement;
+    if (t.dataset.goto) selectNode(t.dataset.goto);
+    if (t.dataset.edge) {
+      const e = edges.find((x) => x.id === t.dataset.edge);
+      if (e) showEdge(e);
+    }
+    if (t.dataset.group) {
+      groupSel.value = t.dataset.group;
+      render();
+      showGroup(groupById.get(t.dataset.group)!);
+    }
+  });
+
+  function renderList() {
+    // la liste n'est pas tronquée : on repart de tous les nœuds qui passent les filtres
+    const q = search.value.trim();
+    const types = new Set(typeBoxes.filter((b) => b.checked).map((b) => b.value));
+    const review = reviewSel.value;
+    const pass = (n: N) => types.has(n.type) && (!review || n.review_status === review) && matches(n, q);
+    const shown = groupSel.value ? groups.filter((g) => g.id === groupSel.value) : groups;
+    const order = (n: N) => ['question', 'idee', 'hypothese', 'fiche_source', 'source'].indexOf(n.type);
+    listBody.innerHTML = shown
+      .map((g) => {
+        const items = g.member_ids.map((id) => byId.get(id)!).filter((n) => n && pass(n)).sort((a, b) => order(a) - order(b));
+        if (!items.length) return '';
+        return `<details${groupSel.value || q ? ' open' : ''}><summary>${esc(g.label)} <span class="muted small">(${items.length})</span></summary><ul>${items
+          .map((n) => `<li><span class="muted small">${esc(TYPE_LABEL[n.type])}${n.metadata?.study_id ? ' ' + esc(n.metadata.study_id) : ''} · </span><button class="link" data-goto="${esc(n.id)}">${esc(n.title)}</button></li>`)
+          .join('')}</ul></details>`;
+      })
+      .join('');
+    const orphans = nodes.filter((n) => !n.group_ids.length && pass(n) && !groupSel.value);
+    if (orphans.length)
+      listBody.innerHTML += `<details><summary>Sans groupe <span class="muted small">(${orphans.length})</span></summary><ul>${orphans.map((n) => `<li><span class="muted small">${esc(TYPE_LABEL[n.type])} · </span><button class="link" data-goto="${esc(n.id)}">${esc(n.title)}</button></li>`).join('')}</ul></details>`;
+  }
+  listBody.addEventListener('click', (ev) => {
+    const t = ev.target as HTMLElement;
+    if (t.dataset.goto) {
+      selectNode(t.dataset.goto);
+      $('kg-canvas').scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }
+  });
+
+  let timer: number | undefined;
+  search.addEventListener('input', () => {
+    clearTimeout(timer);
+    timer = window.setTimeout(render, 250);
+  });
+  [groupSel, reviewSel, allSrc, ...typeBoxes].forEach((el) => el.addEventListener('change', render));
+  $('kg-fit').addEventListener('click', () => {
+    cy.elements().removeClass('faded');
+    cy.fit(undefined, 20);
+  });
+  new MutationObserver(applyStyle).observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme', 'class'] });
+
+  render();
+</script>

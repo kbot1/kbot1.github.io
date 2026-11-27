@@ -24,6 +24,11 @@ function branches(md = '') {
       <h1>{t('nav.cartes')}</h1>
       <p>{t('cartes.intro')}</p>
     </header>
+    <a class="card kg-card" href={href(lang, '/connaissances/')}>
+      <span class="badge">Nouveau</span>
+      <h3>Carte de connaissances — congrès SFRO 2026</h3>
+      <p class="muted small">264 résumés classés par thème, 33 idées clés sourcées et 6 questions ouvertes, enrichie au fil des fiches de lecture.</p>
+    </a>
     <div class="grid">
       {
         cartes.map((c) => (
@@ -46,6 +51,8 @@ function branches(md = '') {
 </Base>
 
 <style>
+  .kg-card { display: block; margin-bottom: 1.25rem; text-decoration: none; color: inherit; }
+  .kg-card h3 { margin: 0.4rem 0 0.3rem; }
   .glyph { width: 120px; height: 60px; margin-bottom: 0.5rem; }
   .glyph circle { fill: var(--accent); }
   .glyph path { fill: none; stroke: var(--accent); stroke-width: 2; opacity: 0.55; }
