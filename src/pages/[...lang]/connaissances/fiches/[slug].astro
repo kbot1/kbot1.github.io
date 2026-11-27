@@ -1,0 +1,45 @@
+---
+import { render, type CollectionEntry } from 'astro:content';
+import Base from '../../../../layouts/Base.astro';
+import { href, langFromParam, fmtDate } from '../../../../i18n';
+import { getFiches } from '../../../../lib-connaissances';
+
+export async function getStaticPaths() {
+  const fiches = await getFiches();
+  return [undefined, 'en'].flatMap((lang) => fiches.map((f) => ({ params: { lang, slug: f.id }, props: { fiche: f } })));
+}
+const { fiche } = Astro.props as { fiche: CollectionEntry<'fiches'> };
+const lang = langFromParam(Astro.params.lang);
+const d = fiche.data;
+const { Content } = await render(fiche);
+const meta = [d.auteurs, d.annee, d.revue, d.type_etude].filter(Boolean).join(' · ');
+---
+
+<Base lang={lang} title={d.titre} description={d.synthese ?? d.titre}>
+  <article class="container">
+    <header class="page-head">
+      <a class="small" href={href(lang, `/connaissances/#n=fiche-${fiche.id}`)} style="text-decoration:none">← Carte de connaissances</a>
+      <p class="small muted" style="margin-top:1rem">
+        Fiche de lecture · {d.statut}{d.date_lecture && <> · lue le {fmtDate(d.date_lecture, lang)}</>}
+      </p>
+      <h1>{d.titre}</h1>
+      {meta && <p class="muted">{meta}</p>}
+      {d.doi && <p class="small">DOI : <a href={`https://doi.org/${d.doi}`}>{d.doi}</a></p>}
+    </header>
+    <div class="prose"><Content /></div>
+    {
+      d.idees.length > 0 && (
+        <section style="margin-top:2rem">
+          <h2>Idées versées dans la carte</h2>
+          <ul>
+            {d.idees.map((i) => (
+              <li>
+                <a href={href(lang, `/connaissances/#n=${i.id}`)}>{i.titre}</a>
+              </li>
+            ))}
+          </ul>
+        </section>
+      )
+    }
+  </article>
+</Base>

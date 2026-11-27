@@ -122,4 +122,61 @@ const revues = defineCollection({
   }),
 });
 
-export const collections = { travaux, blog, cartes, galerie, veille, revues };
+
+/**
+ * FICHES DE LECTURE : bibliothèque de connaissances.
+ * Un fichier Markdown par article lu, dans src/content/connaissances/fiches/
+ * (modèle : _modele.md, ignoré car son nom commence par « _ »).
+ * Chaque fiche devient un nœud « fiche_source » de la carte de connaissances,
+ * relié à sa source et aux idées déclarées dans `idees`.
+ */
+const lien = z.object({
+  vers: z.string(),
+  relation: z.enum(['soutient', 'contredit', 'nuance', 'precise', 'analogue_a', 'mobilise', 'utilise']),
+  justification: z.string(),
+  base: z.enum(['explicit', 'inferred', 'exploratory']).default('inferred'),
+});
+const vide = (v: unknown) => (v === null || v === '' ? undefined : v);
+const fiches = defineCollection({
+  loader: glob({ pattern: '**/[^_]*.md', base: './src/content/connaissances/fiches' }),
+  schema: z.object({
+    type: z.literal('fiche-source').default('fiche-source'),
+    titre: z.string(),
+    statut: z.string().default('a-lire'),
+    statut_revue: z.enum(['proposed', 'accepted', 'rejected']).default('proposed'),
+    date_lecture: z.preprocess(vide, z.coerce.date().optional()),
+    auteurs: z.preprocess(vide, z.string().optional()),
+    annee: z.preprocess(vide, z.coerce.string().optional()),
+    revue: z.preprocess(vide, z.string().optional()),
+    doi: z.preprocess(vide, z.string().optional()),
+    pmid: z.preprocess(vide, z.coerce.string().optional()),
+    url: z.preprocess(vide, z.string().optional()),
+    type_etude: z.preprocess(vide, z.string().optional()),
+    pathologie: z.preprocess(vide, z.string().optional()),
+    projet: z.preprocess(vide, z.string().optional()),
+    synthese: z.preprocess(vide, z.string().optional()),
+    groupes: z.array(z.string()).default([]),
+    tags: z.array(z.string()).default([]),
+    idees: z
+      .array(
+        z.object({
+          id: z.string().regex(/^[a-z0-9-]+$/, 'identifiant en minuscules, chiffres et tirets'),
+          titre: z.string(),
+          texte: z.string(),
+          type: z.enum(['idee', 'hypothese', 'question']).default('idee'),
+          origine: z.enum(['source_reported', 'author_interpretation', 'user_interpretation', 'ai_inference']).default('source_reported'),
+          statut_epistemique: z.enum(['reported', 'hypothesis', 'disputed', 'not_applicable']).default('reported'),
+          statut_revue: z.enum(['proposed', 'accepted', 'rejected']).default('proposed'),
+          localisation: z.preprocess(vide, z.string().optional()),
+          extrait: z.preprocess(vide, z.string().optional()),
+          limites: z.array(z.string()).default([]),
+          groupes: z.array(z.string()).default([]),
+          tags: z.array(z.string()).default([]),
+          liens: z.array(lien).default([]),
+        }),
+      )
+      .default([]),
+  }),
+});
+
+export const collections = { travaux, blog, cartes, galerie, veille, revues, fiches };
