@@ -65,3 +65,11 @@ export async function getRevues() {
   const all = await getCollection('revues', (e) => !e.data.draft);
   return all.sort((a, b) => b.data.date.getTime() - a.data.date.getTime() || a.data.ordre - b.data.ordre);
 }
+
+export type Question = CollectionEntry<'questions'>;
+
+/** Questions ouvertes publiées, de la plus récente à la plus ancienne. */
+export async function getQuestions() {
+  const all = await getCollection('questions', (e) => !e.data.draft);
+  return all.sort((a, b) => b.data.date.getTime() - a.data.date.getTime());
+}

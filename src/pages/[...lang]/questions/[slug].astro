@@ -1,0 +1,42 @@
+---
+import { render, type CollectionEntry } from 'astro:content';
+import Base from '../../../layouts/Base.astro';
+import { useT, href, fmtDate, langFromParam } from '../../../i18n';
+import { getQuestions } from '../../../lib';
+
+export async function getStaticPaths() {
+  const questions = await getQuestions();
+  return [undefined, 'en'].flatMap((lang) =>
+    questions.map((q) => ({ params: { lang, slug: q.id }, props: { question: q } })),
+  );
+}
+
+const { question } = Astro.props as { question: CollectionEntry<'questions'> };
+const lang = langFromParam(Astro.params.lang);
+const t = useT(lang);
+const d = question.data;
+const { Content } = await render(question);
+---
+
+<Base lang={lang} title={d.title} description={d.summary}>
+  <article class="container">
+    <header class="page-head">
+      <a class="small" href={href(lang, '/questions/')} style="text-decoration:none">← {t('nav.questions')}</a>
+      <p class="small muted" style="margin-top:1rem">
+        <time datetime={d.date.toISOString().slice(0, 10)}>{fmtDate(d.date, lang)}</time>
+      </p>
+      <h1>{d.title}</h1>
+      {lang === 'en' && <p class="small muted">{t('revues.frOnly')}</p>}
+    </header>
+
+    <div class="prose" lang="fr">
+      <Content />
+    </div>
+
+    <p class="small muted disclaimer">{t('questions.disclaimer')}</p>
+  </article>
+</Base>
+
+<style>
+  .disclaimer { max-width: 70ch; margin-top: 2rem; }
+</style>

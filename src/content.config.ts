@@ -122,6 +122,20 @@ const revues = defineCollection({
   }),
 });
 
+/**
+ * QUESTIONS OUVERTES : essais et réflexions, en français.
+ * Un fichier Markdown par article dans src/content/questions/.
+ */
+const questions = defineCollection({
+  loader: glob({ pattern: '**/*.md', base: './src/content/questions' }),
+  schema: z.object({
+    title: z.string(),
+    date: z.coerce.date(),
+    summary: z.string(),
+    tags: z.array(z.string()).default([]),
+    draft: z.boolean().default(false),
+  }),
+});
 
 /**
  * FICHES DE LECTURE : bibliothèque de connaissances.
@@ -179,4 +193,4 @@ const fiches = defineCollection({
   }),
 });
 
-export const collections = { travaux, blog, cartes, galerie, veille, revues, fiches };
+export const collections = { travaux, blog, cartes, galerie, veille, revues, questions, fiches };
