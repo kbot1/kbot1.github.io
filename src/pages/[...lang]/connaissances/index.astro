@@ -245,8 +245,8 @@ const L = {
   const cy = cytoscape({
     container: $('kg-canvas'),
     wheelSensitivity: 0.25,
-    minZoom: 0.15,
-    maxZoom: 3,
+    minZoom: 0.1,
+    maxZoom: 4,
     style: [],
   });
 
@@ -254,16 +254,16 @@ const L = {
     const accent = css('--accent'), text = css('--text'), muted = css('--muted'), line = css('--line');
     const card = css('--bg-card'), soft = css('--accent-soft'), q = css('--c-poster'), fiche = css('--c-oral'), hyp = css('--c-resume');
     cy.style([
-      { selector: 'node', style: { label: 'data(short)', 'min-zoomed-font-size': 8, 'font-size': 9, color: text, 'text-wrap': 'wrap', 'text-max-width': '130px', 'text-valign': 'bottom', 'text-margin-y': 4, 'font-family': 'Inter Variable, system-ui, sans-serif', width: 16, height: 16, 'background-color': accent, 'border-width': 2, 'border-color': card } },
-      { selector: 'node[type="source"]', style: { shape: 'round-rectangle', width: 10, height: 10, 'background-color': muted, 'background-opacity': 0.55, 'font-size': 7, color: muted } },
+      { selector: 'node', style: { label: 'data(short)', 'font-size': 12, color: text, 'text-wrap': 'wrap', 'text-max-width': '170px', 'text-valign': 'bottom', 'text-margin-y': 5, 'text-background-color': card, 'text-background-opacity': 0.75, 'text-background-padding': '1px', 'font-family': 'Inter Variable, system-ui, sans-serif', width: 20, height: 20, 'background-color': accent, 'border-width': 2, 'border-color': card } },
+      { selector: 'node[type="source"]', style: { shape: 'round-rectangle', width: 12, height: 12, 'background-color': muted, 'background-opacity': 0.55, 'font-size': 9, 'min-zoomed-font-size': 5, color: muted } },
       { selector: 'node[type="fiche_source"]', style: { shape: 'round-rectangle', 'background-color': fiche, width: 16, height: 16 } },
       { selector: 'node[type="question"]', style: { shape: 'round-tag', 'background-color': q, width: 18, height: 18 } },
       { selector: 'node[type="hypothese"]', style: { shape: 'diamond', 'background-color': card, 'border-color': hyp, 'border-style': 'dashed', 'border-width': 2, label: 'data(hlabel)' } },
       { selector: 'node[review="proposed"]', style: { 'border-style': 'dotted', 'border-color': muted, 'border-width': 1.5 } },
       { selector: 'node[review="rejected"]', style: { opacity: 0.35 } },
-      { selector: 'node[type="groupe"]', style: { shape: 'ellipse', 'background-color': soft, 'border-color': accent, 'border-width': 1.5, 'border-style': 'solid', width: 'data(size)', height: 'data(size)', label: 'data(label)', 'min-zoomed-font-size': 0, 'text-valign': 'center', 'text-margin-y': 0, 'font-size': 11, 'font-weight': 600, color: accent, 'text-max-width': '110px' } },
+      { selector: 'node[type="groupe"]', style: { shape: 'ellipse', 'background-color': soft, 'border-color': accent, 'border-width': 1.5, 'border-style': 'solid', width: 'data(size)', height: 'data(size)', label: 'data(label)', 'min-zoomed-font-size': 0, 'text-valign': 'center', 'text-margin-y': 0, 'font-size': 'data(fsize)', 'font-weight': 700, color: accent, 'text-max-width': '160px', 'text-background-opacity': 0 } },
       { selector: 'edge', style: { width: 1.2, 'line-color': line, 'target-arrow-color': line, 'target-arrow-shape': 'triangle', 'arrow-scale': 0.7, 'curve-style': 'bezier' } },
-      { selector: 'edge[rel!="extrait_de"][rel!="documente"][rel!="membre"]', style: { label: 'data(label)', 'font-size': 7, color: muted, 'text-background-color': card, 'text-background-opacity': 1, 'text-background-padding': '1px', width: 1.6, 'line-color': muted, 'target-arrow-color': muted } },
+      { selector: 'edge[rel!="extrait_de"][rel!="documente"][rel!="membre"]', style: { label: 'data(label)', 'font-size': 9, color: muted, 'text-background-color': card, 'text-background-opacity': 1, 'text-background-padding': '1px', width: 1.6, 'line-color': muted, 'target-arrow-color': muted } },
       { selector: 'edge[basis="exploratory"]', style: { 'line-style': 'dashed' } },
       { selector: 'edge[rel="analogue_a"]', style: { 'target-arrow-shape': 'none' } },
       { selector: 'edge[rel="membre"]', style: { 'line-color': muted, opacity: 0.35, width: 1, 'target-arrow-shape': 'none', 'line-style': 'dotted' } },
@@ -274,7 +274,7 @@ const L = {
   }
 
   function shortLabel(n: N) {
-    const t = n.title.length > 70 ? n.title.slice(0, 67) + '…' : n.title;
+    const t = n.title.length > 90 ? n.title.slice(0, 87) + '…' : n.title;
     return n.type === 'source' && n.metadata?.study_id ? String(n.metadata.study_id) : t;
   }
 
@@ -292,14 +292,14 @@ const L = {
       // nœuds « groupe » cliquables pour déplier un thème
       for (const g of groups) {
         const members = g.member_ids.filter((id) => ids.has(id) && byId.get(id)?.type !== 'source');
-        els.push({ group: 'nodes', data: { id: 'grp:' + g.id, type: 'groupe', label: g.label, size: 34 + Math.min(46, Math.sqrt(g.member_ids.length) * 6) } });
+        els.push({ group: 'nodes', data: { id: 'grp:' + g.id, type: 'groupe', label: g.label, size: 50 + Math.min(70, Math.sqrt(g.member_ids.length) * 9), fsize: 16 + Math.min(10, Math.sqrt(g.member_ids.length)) } });
         for (const m of members) els.push({ group: 'edges', data: { id: `m:${g.id}:${m}`, source: 'grp:' + g.id, target: m, rel: 'membre' } });
       }
     }
     cy.elements().remove();
     cy.add(els);
     applyStyle();
-    cy.layout({ name: 'cose', animate: false, nodeRepulsion: () => 12000, idealEdgeLength: () => 80, nodeOverlap: 16, gravity: 1.2, componentSpacing: 60, numIter: 1500, randomize: true, padding: 20 } as any).run();
+    cy.layout({ name: 'cose', animate: false, nodeRepulsion: () => 40000, idealEdgeLength: () => 130, nodeOverlap: 40, gravity: 0.8, componentSpacing: 120, numIter: 1500, randomize: true, padding: 20 } as any).run();
     cy.fit(undefined, 24);
     if (cy.zoom() > 1.3) {
       cy.zoom(1.3);
