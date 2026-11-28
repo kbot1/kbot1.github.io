@@ -61,3 +61,12 @@ npm run build    # génère dist/
 Dans **Settings → Pages**, la source doit être **GitHub Actions**. Le workflow `.github/workflows/deploy.yml` construit et publie le site.
 
 L'ancien site Jekyll reste consultable dans l'historique git.
+
+## Espace privé (`/prive/`)
+
+Rubrique non reliée au menu, non indexée, protégée par identifiant + mot de passe. Le site étant public, le contenu est **chiffré** (AES‑256‑GCM, clé dérivée de l'identifiant et du mot de passe par PBKDF2) : seul `public/prive/coffre.json` est publié, les fichiers en clair restent dans `prive-source/` (exclu de Git).
+
+Ajouter un contenu ou changer le mot de passe :
+1. déposer le `.html` dans `prive-source/` et le déclarer dans `prive-source/contenu.json` ;
+2. `node outils/chiffrer-prive.mjs "identifiant" "mot de passe"` ;
+3. committer `public/prive/coffre.json`.

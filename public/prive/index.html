@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex, nofollow, noarchive">
+<title>Espace privé</title>
+<style>
+:root{color-scheme:light dark;--bg:#f6f7f9;--card:#fff;--text:#1b2330;--muted:#5c6675;--line:#e3e6eb;--accent:#1d4e89;--err:#b42318}
+@media (prefers-color-scheme:dark){:root{--bg:#0f141b;--card:#161d27;--text:#e4e8ee;--muted:#9aa5b4;--line:#273140;--accent:#7fb0ea;--err:#f97066}}
+*{box-sizing:border-box}
+html,body{margin:0;height:100%}
+body{background:var(--bg);color:var(--text);font:16px/1.5 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
+.wrap{min-height:100%;display:grid;place-items:center;padding:24px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:32px;width:100%;max-width:420px;box-shadow:0 8px 24px rgb(16 24 40/.08)}
+h1{font:600 26px/1.15 Georgia,"Times New Roman",serif;margin:0 0 6px}
+p.sub{margin:0 0 22px;color:var(--muted)}
+label{display:block;font-weight:600;font-size:14px;margin:14px 0 6px}
+input{width:100%;font:inherit;font-size:16px;padding:11px 12px;border:1px solid var(--line);border-radius:10px;background:transparent;color:inherit}
+input:focus-visible,button:focus-visible,a:focus-visible{outline:3px solid var(--accent);outline-offset:2px}
+button{font:inherit;font-weight:600;min-height:46px;border:0;border-radius:10px;padding:10px 18px;background:var(--accent);color:#fff;cursor:pointer;width:100%;margin-top:22px}
+@media (prefers-color-scheme:dark){button{color:#0f141b}}
+button:disabled{opacity:.6;cursor:wait}
+.msg{min-height:24px;margin-top:12px;color:var(--err);font-size:15px}
+ul{list-style:none;padding:0;margin:0}
+li a{display:block;border:1px solid var(--line);border-radius:10px;padding:14px 16px;margin-top:10px;color:inherit;text-decoration:none}
+li a:hover{border-color:var(--accent)}
+li b{display:block;color:var(--accent)}
+li span{color:var(--muted);font-size:14px}
+.out{background:none;color:var(--muted);border:1px solid var(--line);margin-top:20px}
+#viewer{position:fixed;inset:0;display:none;flex-direction:column;background:var(--bg)}
+#viewer nav{display:flex;gap:8px;padding:6px 10px;border-bottom:1px solid var(--line);background:var(--card)}
+#viewer nav button{width:auto;margin:0;min-height:36px;padding:4px 12px;background:none;color:var(--text);border:1px solid var(--line);font-size:14px}
+#viewer iframe{flex:1;border:0;width:100%}
+</style>
+</head>
+<body>
+<div class="wrap">
+ <div class="card" id="box">
+  <form id="f" autocomplete="on">
+   <h1>Espace privé</h1>
+   <p class="sub">Accès réservé. Merci de vous identifier.</p>
+   <label for="u">Identifiant</label>
+   <input id="u" name="username" autocomplete="username" required autocapitalize="none" spellcheck="false">
+   <label for="p">Mot de passe</label>
+   <input id="p" name="password" type="password" autocomplete="current-password" required>
+   <button id="go" type="submit">Se connecter</button>
+   <div class="msg" id="msg" role="alert"></div>
+  </form>
+ </div>
+</div>
+<div id="viewer"><nav><button id="home" type="button">← Espace privé</button><button id="out2" type="button">Se déconnecter</button></nav><iframe id="frame" title="Contenu"></iframe></div>
+<script>
+{
+const $=id=>document.getElementById(id);
+const u8=b=>Uint8Array.from(atob(b),c=>c.charCodeAt(0));
+const b64=a=>btoa(String.fromCharCode(...new Uint8Array(a)));
+const esc=s=>String(s).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+let box,items=[];
+async function vault(){if(!box){const r=await fetch("coffre.json",{cache:"no-store"});box=await r.json()}return box}
+async function open(key){
+ const v=await vault();
+ const plain=await crypto.subtle.decrypt({name:"AES-GCM",iv:u8(v.iv)},key,u8(v.data));
+ items=JSON.parse(new TextDecoder().decode(plain)).items;
+}
+async function derive(login,pass){
+ const v=await vault();
+ const base=await crypto.subtle.importKey("raw",new TextEncoder().encode(login.trim().toLowerCase()+"\n"+pass),"PBKDF2",false,["deriveKey"]);
+ return crypto.subtle.deriveKey({name:"PBKDF2",hash:"SHA-256",salt:u8(v.salt),iterations:v.iter},base,{name:"AES-GCM",length:256},true,["decrypt"]);
+}
+function list(){
+ $("viewer").style.display="none";$("frame").removeAttribute("srcdoc");
+ $("box").innerHTML=`<h1>Espace privé</h1><p class="sub">Choisissez un contenu.</p><ul>${items.map((it,i)=>`<li><a href="#${esc(it.id)}" data-i="${i}"><b>${esc(it.titre)}</b><span>${esc(it.description||"")}</span></a></li>`).join("")}</ul><button class="out" id="out" type="button">Se déconnecter</button>`;
+ $("box").querySelectorAll("a").forEach(a=>a.onclick=e=>{e.preventDefault();show(+a.dataset.i)});
+ $("out").onclick=logout;
+ const h=location.hash.slice(1),k=items.findIndex(it=>it.id===h);if(k>=0)show(k);
+}
+function show(i){
+ const it=items[i];document.title=it.titre;
+ try{history.replaceState(null,"","#"+it.id)}catch(e){}
+ $("frame").srcdoc=it.html;$("viewer").style.display="flex";
+}
+function logout(){try{sessionStorage.removeItem("prive-k")}catch(e){}location.replace(location.pathname)}
+$("home").onclick=()=>{document.title="Espace privé";try{history.replaceState(null,"",location.pathname)}catch(e){}list()};
+$("out2").onclick=logout;
+$("f").onsubmit=async e=>{
+ e.preventDefault();$("msg").textContent="";$("go").disabled=true;$("go").textContent="Vérification…";
+ try{
+  const key=await derive($("u").value,$("p").value);
+  await open(key);
+  try{sessionStorage.setItem("prive-k",b64(await crypto.subtle.exportKey("raw",key)))}catch(e){}
+  list();
+ }catch(err){
+  $("msg").textContent="Identifiant ou mot de passe incorrect.";
+  $("go").disabled=false;$("go").textContent="Se connecter";
+ }
+};
+(async()=>{try{const s=sessionStorage.getItem("prive-k");if(!s)return;
+ const key=await crypto.subtle.importKey("raw",u8(s),{name:"AES-GCM"},false,["decrypt"]);await open(key);list()}catch(e){}})();
+}
+</script>
+</body>
+</html>

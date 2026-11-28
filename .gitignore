@@ -3,3 +3,6 @@ dist/
 .astro/
 .DS_Store
 carte-complete.json
+
+# Sources en clair de l espace prive : ne jamais publier
+prive-source/
